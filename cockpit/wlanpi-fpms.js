@@ -98,7 +98,20 @@
             })
             .fail(function (err) {
                 console.warn("fpms: navigate failed for", nodeId, err);
+                flashError("Nav failed: " + (err.problem || err.status || "error"));
             });
+    }
+
+    /** Briefly show an error in the connection badge, then restore. */
+    function flashError(msg) {
+        var badge = el("conn-badge");
+        var prev  = { text: badge.textContent, cls: badge.className };
+        badge.textContent = "⚠ " + msg;
+        badge.className   = "fpms-badge fpms-badge-error";
+        setTimeout(function () {
+            badge.textContent = prev.text;
+            badge.className   = prev.cls;
+        }, 3000);
     }
 
     // -----------------------------------------------------------------------
