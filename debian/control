@@ -15,7 +15,7 @@ Build-Depends: debhelper-compat (= 13),
                zlib1g-dev,
                libfreetype6-dev
 Standards-Version: 4.6.2
-X-Python3-Version: >= 3.11
+X-Python3-Version: >= 3.9
 Homepage: https://github.com/WLAN-Pi/wlanpi-fpms2
 
 Package: wlanpi-fpms2

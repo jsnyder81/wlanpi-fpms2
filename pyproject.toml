@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "wlanpi-fpms2"
 version = "0.1.0"
 description = "WLANPi Front Panel Menu System 2 — decoupled state/display architecture"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 dependencies = [
     "fastapi>=0.111",
     "uvicorn[standard]>=0.29",
