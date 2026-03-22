@@ -22,6 +22,7 @@ dependencies = [
 screen = [
     "spidev>=3.5",
     "gpiozero>=1.6",
+    "RPi.GPIO>=0.7",
     "gpiod>=2.0",
 ]
 dev = [
