@@ -86,9 +86,6 @@
             });
     }
 
-    // Expose so inline onclick= handlers can call it
-    window.sendButton = sendButton;
-
     // -----------------------------------------------------------------------
     // Main render dispatcher
     // -----------------------------------------------------------------------
@@ -375,6 +372,13 @@
     // -----------------------------------------------------------------------
     // Boot sequence
     // -----------------------------------------------------------------------
+
+    // Wire nav buttons via event listeners (CSP blocks inline onclick=)
+    document.querySelectorAll("[data-button]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            sendButton(btn.getAttribute("data-button"));
+        });
+    });
 
     fetchMenu();
     pollState();
