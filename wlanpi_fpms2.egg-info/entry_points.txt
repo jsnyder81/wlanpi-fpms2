@@ -1,3 +1,4 @@
 [console_scripts]
 wlanpi-fpms2 = wlanpi_fpms2.__main__:main
+wlanpi-fpms2-screen = wlanpi_fpms2.interfaces.screen.client:main
 wlanpi-fpms2-tui = wlanpi_fpms2.interfaces.tui.app:main

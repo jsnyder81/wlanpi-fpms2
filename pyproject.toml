@@ -27,11 +27,15 @@ dev = [
 
 [project.scripts]
 wlanpi-fpms2 = "wlanpi_fpms2.__main__:main"
+wlanpi-fpms2-screen = "wlanpi_fpms2.interfaces.screen.client:main"
 wlanpi-fpms2-tui = "wlanpi_fpms2.interfaces.tui.app:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["wlanpi_fpms2*"]
+
+[tool.setuptools.package-data]
+"wlanpi_fpms2.interfaces.screen" = ["fonts/*", "images/128x128/*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

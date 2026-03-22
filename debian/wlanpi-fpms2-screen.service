@@ -1,0 +1,19 @@
+[Unit]
+Description=WLANPi FPMS2 Screen Client
+After=wlanpi-fpms2.service
+Requires=wlanpi-fpms2.service
+
+[Service]
+Type=simple
+# Must run as root to access GPIO and SPI
+User=root
+Group=root
+ExecStart=/usr/bin/wlanpi-fpms2-screen
+Restart=on-failure
+RestartSec=3
+# Allow clean shutdown: send SIGTERM and wait up to 10s
+TimeoutStopSec=10
+Environment=WLANPI_STATE_URL=http://127.0.0.1:8765
+
+[Install]
+WantedBy=multi-user.target

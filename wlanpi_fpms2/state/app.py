@@ -20,13 +20,9 @@ log = logging.getLogger(__name__)
 
 
 def _load_action_registry() -> dict:
-    """Return the action dispatch table.
-
-    In Phase 1 this returns a mostly empty dict with a few stub actions.
-    Phase 2 will populate it with real core_client-backed callables.
-    """
-    from wlanpi_fpms2.actions.stubs import build_stub_registry
-    return build_stub_registry()
+    """Return the action dispatch table (Phase 2: real implementations)."""
+    from wlanpi_fpms2.actions.registry import build_action_registry
+    return build_action_registry()
 
 
 def _read_device_mode() -> str:
@@ -56,6 +52,27 @@ def _read_timezones() -> list[dict]:
     return []
 
 
+def _create_core_client():
+    """Create a CoreApiClient if the shared secret is readable, else return None."""
+    import os
+    from wlanpi_fpms2.core_client.client import CoreApiClient
+    from wlanpi_fpms2.core_client.hmac_auth import _DEFAULT_SECRET_PATH
+
+    secret_env = os.environ.get("WLANPI_CORE_SECRET_PATH")
+    secret_path = _DEFAULT_SECRET_PATH if not secret_env else __import__("pathlib").Path(secret_env)
+
+    if not secret_path.exists():
+        log.warning("wlanpi-core secret not found at %s — running without core_client", secret_path)
+        return None
+    try:
+        secret = secret_path.read_bytes()
+        base_url = os.environ.get("WLANPI_CORE_BASE_URL", "http://localhost/api/v1")
+        return CoreApiClient(base_url=base_url, secret=secret)
+    except Exception as exc:
+        log.warning("Could not create CoreApiClient: %s — running without core_client", exc)
+        return None
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan: startup and shutdown."""
@@ -73,27 +90,33 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     store.add_listener(_on_state_change)
 
+    # Create wlanpi-core API client (graceful degradation if not available)
+    core_client = _create_core_client()
+
     # Attach to app state
     app.state.store = store
     app.state.broadcaster = broadcaster
     app.state.menu_tree = menu_tree
     app.state.action_registry = action_registry
-    app.state.core_client = None  # Phase 2+
+    app.state.core_client = core_client
 
     # Launch background tasks
     tasks = [
         asyncio.create_task(broadcaster.ping_loop()),
         asyncio.create_task(expire_complications_loop(store)),
-        asyncio.create_task(homepage_refresh_loop(store, app.state.core_client)),
+        asyncio.create_task(homepage_refresh_loop(store, core_client)),
     ]
 
-    log.info("fpms2 state service started (mode=%s)", mode)
+    log.info("fpms2 state service started (mode=%s, core_client=%s)",
+             mode, "connected" if core_client else "unavailable")
     yield
 
     # --- Shutdown ---
     for t in tasks:
         t.cancel()
     await asyncio.gather(*tasks, return_exceptions=True)
+    if core_client:
+        await core_client.close()
     log.info("fpms2 state service stopped")
 
 

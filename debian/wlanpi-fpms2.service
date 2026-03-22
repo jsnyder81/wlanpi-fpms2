@@ -1,0 +1,19 @@
+[Unit]
+Description=WLANPi FPMS2 State Service
+After=network.target wlanpi-core.service
+Wants=wlanpi-core.service
+# Conflict with old fpms — only one may run at a time
+Conflicts=wlanpi-fpms.service
+
+[Service]
+Type=simple
+User=wlanpi
+Group=wlanpi
+ExecStart=/usr/bin/wlanpi-fpms2
+Restart=on-failure
+RestartSec=5
+# Allow access to wlanpi-core shared secret
+SupplementaryGroups=wlanpi-core
+
+[Install]
+WantedBy=multi-user.target
