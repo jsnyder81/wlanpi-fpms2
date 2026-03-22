@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# wlanpi-fpms2 postinst script
+#
+set -e
+
+# Create symlinks so the entry-point scripts are on PATH
+VENV=/opt/wlanpi-fpms2
+BIN=/usr/bin
+
+for cmd in wlanpi-fpms2 wlanpi-fpms2-screen wlanpi-fpms2-tui; do
+    if [ -f "$VENV/bin/$cmd" ] && [ ! -e "$BIN/$cmd" ]; then
+        ln -sf "$VENV/bin/$cmd" "$BIN/$cmd"
+    fi
+done
+
+# Enable SPI interface (required for the OLED display)
+BOOT_CONFIG=/boot/firmware/config.txt
+[ -f "$BOOT_CONFIG" ] || BOOT_CONFIG=/boot/config.txt
+
+if [ -f "$BOOT_CONFIG" ]; then
+    if grep -q -E "^#?dtparam=spi=" "$BOOT_CONFIG"; then
+        sed -i 's/^#\?dtparam=spi=.*/dtparam=spi=on/' "$BOOT_CONFIG"
+    else
+        echo "dtparam=spi=on" >> "$BOOT_CONFIG"
+    fi
+fi
+
+# Reload systemd and enable services
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload || true
+    systemctl enable wlanpi-fpms2.service        || true
+    systemctl enable wlanpi-fpms2-screen.service || true
+fi
+
+#DEBHELPER#
+
+exit 0

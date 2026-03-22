@@ -1,0 +1,9 @@
+wlanpi-fpms2 (0.1.0) unstable; urgency=medium
+
+  * Initial release — decoupled state/display architecture
+  * FastAPI state service with WebSocket broadcast
+  * wlanpi-core HMAC client (Phases 1 & 2)
+  * OLED screen thin client with PIL renderer (Phase 3)
+  * Complications API for third-party status indicators
+
+ -- Jake Snyder <jsnyder81@gmail.com>  Sat, 21 Mar 2026 00:00:00 -0500
