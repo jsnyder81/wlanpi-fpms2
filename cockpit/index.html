@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WLANPi FPMS</title>
+  <link rel="stylesheet" href="../base1/cockpit.css" />
+  <link rel="stylesheet" href="wlanpi-fpms.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Header -->
+  <div class="fpms-header">
+    <div class="fpms-header-left">
+      <span class="fpms-title">WLANPi FPMS</span>
+    </div>
+    <div class="fpms-header-right">
+      <span id="conn-badge" class="fpms-badge fpms-badge-warning">○ Connecting</span>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="fpms-grid">
+
+    <!-- Left column: device card + nav buttons -->
+    <div class="fpms-left">
+
+      <div class="fpms-card">
+        <div class="fpms-card-title">Device</div>
+        <table class="fpms-info-table">
+          <tr><td>Hostname</td><td id="info-hostname">—</td></tr>
+          <tr><td>IP</td><td id="info-ip">—</td></tr>
+          <tr><td>Mode</td><td id="info-mode">—</td></tr>
+          <tr><td>Bluetooth</td><td id="info-bt">—</td></tr>
+          <tr><td>Profiler</td><td id="info-profiler">—</td></tr>
+          <tr><td>Reachable</td><td id="info-reachable">—</td></tr>
+          <tr><td>Time</td><td id="info-time">—</td></tr>
+        </table>
+      </div>
+
+      <div class="fpms-card">
+        <div class="fpms-card-title">Navigation</div>
+        <div class="fpms-nav-grid">
+          <div></div>
+          <button class="fpms-nav-btn" onclick="sendButton('up')" title="Up">↑</button>
+          <div></div>
+          <button class="fpms-nav-btn" onclick="sendButton('left')" title="Back">←</button>
+          <button class="fpms-nav-btn fpms-nav-center" onclick="sendButton('center')" title="Select">●</button>
+          <button class="fpms-nav-btn" onclick="sendButton('right')" title="Select / Enter">→</button>
+          <div></div>
+          <button class="fpms-nav-btn" onclick="sendButton('down')" title="Down">↓</button>
+          <div></div>
+        </div>
+        <div class="fpms-nav-hint">[←] Back &nbsp;|&nbsp; [→] Select &nbsp;|&nbsp; [↑↓] Move</div>
+      </div>
+
+    </div>
+
+    <!-- Right column: menu / content panel -->
+    <div class="fpms-right">
+
+      <div class="fpms-card fpms-content-card">
+
+        <!-- Breadcrumb -->
+        <div id="breadcrumb" class="fpms-breadcrumb">Main Menu</div>
+
+        <!-- Loading overlay -->
+        <div id="loading-overlay" class="fpms-loading" style="display:none;">
+          <div class="fpms-spinner"></div>
+          <div>Loading…</div>
+        </div>
+
+        <!-- Home panel -->
+        <div id="panel-home" class="fpms-panel">
+          <pre id="home-content" class="fpms-pre"></pre>
+        </div>
+
+        <!-- Menu panel -->
+        <div id="panel-menu" class="fpms-panel" style="display:none;">
+          <ul id="menu-list" class="fpms-menu-list"></ul>
+        </div>
+
+        <!-- Page panel -->
+        <div id="panel-page" class="fpms-panel" style="display:none;">
+          <div id="page-title" class="fpms-page-title"></div>
+          <pre id="page-content" class="fpms-pre"></pre>
+          <div id="page-alert" class="fpms-alert" style="display:none;"></div>
+          <div id="page-scroll-hint" class="fpms-scroll-hint" style="display:none;"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Complications bar -->
+  <div id="complications-bar" class="fpms-complications" style="display:none;">
+    <span class="fpms-complications-label">Complications:</span>
+    <span id="complications-content"></span>
+  </div>
+
+</div>
+
+<script src="wlanpi-fpms.js"></script>
+</body>
+</html>

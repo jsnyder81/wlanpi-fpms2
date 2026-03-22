@@ -1,0 +1,13 @@
+{
+  "version": 0,
+  "name": "wlanpi-fpms2",
+  "requires": {
+    "cockpit": "254"
+  },
+  "menu": {
+    "index": {
+      "label": "WLANPi FPMS",
+      "order": 50
+    }
+  }
+}

@@ -1,0 +1,337 @@
+/* WLANPi FPMS Cockpit Plugin Styles */
+
+/* ── Layout ─────────────────────────────────────────────── */
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    font-family: var(--pf-global--FontFamily--sans-serif, "RedHatDisplay", "Overpass", sans-serif);
+    font-size: 14px;
+    color: var(--pf-global--Color--100, #151515);
+    background: var(--pf-global--BackgroundColor--100, #f0f0f0);
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.fpms-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--pf-global--BackgroundColor--dark-100, #151515);
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.fpms-title {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.fpms-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.fpms-badge-ok {
+    background: #3e8635;
+    color: #fff;
+}
+
+.fpms-badge-warning {
+    background: #f0ab00;
+    color: #151515;
+}
+
+/* ── Main grid ──────────────────────────────────────────── */
+
+.fpms-grid {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 12px;
+    padding: 12px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.fpms-left {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+}
+
+.fpms-right {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ── Card ───────────────────────────────────────────────── */
+
+.fpms-card {
+    background: var(--pf-global--BackgroundColor--100, #fff);
+    border: 1px solid var(--pf-global--BorderColor--100, #d2d2d2);
+    border-radius: 4px;
+    padding: 12px 14px;
+}
+
+.fpms-content-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+.fpms-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--pf-global--Color--200, #6a6e73);
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--pf-global--BorderColor--100, #d2d2d2);
+    padding-bottom: 6px;
+}
+
+/* ── Device info table ──────────────────────────────────── */
+
+.fpms-info-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.fpms-info-table td {
+    padding: 3px 0;
+    vertical-align: top;
+}
+
+.fpms-info-table td:first-child {
+    color: var(--pf-global--Color--200, #6a6e73);
+    width: 80px;
+    white-space: nowrap;
+}
+
+/* ── Nav button grid ────────────────────────────────────── */
+
+.fpms-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.fpms-nav-btn {
+    height: 36px;
+    font-size: 16px;
+    cursor: pointer;
+    background: var(--pf-global--BackgroundColor--200, #f0f0f0);
+    border: 1px solid var(--pf-global--BorderColor--100, #d2d2d2);
+    border-radius: 4px;
+    transition: background 0.1s;
+}
+
+.fpms-nav-btn:hover {
+    background: var(--pf-global--BackgroundColor--300, #e0e0e0);
+}
+
+.fpms-nav-btn:active {
+    background: var(--pf-global--primary-color--100, #0066cc);
+    color: #fff;
+}
+
+.fpms-nav-center {
+    background: var(--pf-global--primary-color--100, #0066cc);
+    color: #fff;
+    border-color: transparent;
+}
+
+.fpms-nav-center:hover {
+    background: var(--pf-global--primary-color--200, #004c99);
+    color: #fff;
+}
+
+.fpms-nav-hint {
+    font-size: 11px;
+    color: var(--pf-global--Color--200, #6a6e73);
+    text-align: center;
+    margin-top: 4px;
+}
+
+/* ── Breadcrumb ─────────────────────────────────────────── */
+
+.fpms-breadcrumb {
+    font-size: 12px;
+    color: var(--pf-global--Color--200, #6a6e73);
+    padding: 0 0 8px 0;
+    border-bottom: 1px solid var(--pf-global--BorderColor--100, #d2d2d2);
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+/* ── Loading overlay ────────────────────────────────────── */
+
+.fpms-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 10;
+    font-size: 13px;
+    color: var(--pf-global--Color--200, #6a6e73);
+}
+
+.fpms-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #d2d2d2;
+    border-top-color: var(--pf-global--primary-color--100, #0066cc);
+    border-radius: 50%;
+    animation: fpms-spin 0.8s linear infinite;
+}
+
+@keyframes fpms-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Panels ─────────────────────────────────────────────── */
+
+.fpms-panel {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* ── Pre-formatted content ──────────────────────────────── */
+
+.fpms-pre {
+    font-family: var(--pf-global--FontFamily--monospace, "RedHatMono", monospace);
+    font-size: 13px;
+    white-space: pre-wrap;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* ── Menu list ──────────────────────────────────────────── */
+
+.fpms-menu-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.fpms-menu-item {
+    padding: 6px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: var(--pf-global--FontFamily--monospace, "RedHatMono", monospace);
+    font-size: 13px;
+    white-space: pre;
+    transition: background 0.1s;
+}
+
+.fpms-menu-item:hover {
+    background: var(--pf-global--BackgroundColor--200, #f0f0f0);
+}
+
+.fpms-menu-selected {
+    background: var(--pf-global--primary-color--100, #0066cc);
+    color: #fff;
+    font-weight: 600;
+}
+
+.fpms-menu-selected:hover {
+    background: var(--pf-global--primary-color--200, #004c99);
+}
+
+/* ── Page title ─────────────────────────────────────────── */
+
+.fpms-page-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--pf-global--BorderColor--100, #d2d2d2);
+    flex-shrink: 0;
+}
+
+/* ── Alerts ─────────────────────────────────────────────── */
+
+.fpms-alert {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    border-left: 4px solid transparent;
+}
+
+.fpms-alert-info {
+    background: #e7f3fb;
+    border-color: #2b9af3;
+    color: #002952;
+}
+
+.fpms-alert-warning {
+    background: #fdf7e7;
+    border-color: #f0ab00;
+    color: #795600;
+}
+
+.fpms-alert-error {
+    background: #faeae8;
+    border-color: #c9190b;
+    color: #7d1007;
+}
+
+/* ── Scroll hint ────────────────────────────────────────── */
+
+.fpms-scroll-hint {
+    font-size: 11px;
+    color: var(--pf-global--Color--200, #6a6e73);
+    margin-top: 8px;
+    text-align: right;
+}
+
+/* ── Complications bar ──────────────────────────────────── */
+
+.fpms-complications {
+    padding: 6px 16px;
+    background: var(--pf-global--BackgroundColor--100, #fff);
+    border-top: 1px solid var(--pf-global--BorderColor--100, #d2d2d2);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.fpms-complications-label {
+    font-weight: 600;
+    color: var(--pf-global--Color--200, #6a6e73);
+    margin-right: 8px;
+}
+
+/* ── Status colors ──────────────────────────────────────── */
+
+.fpms-ok   { color: #3e8635; }
+.fpms-warn { color: #795600; }
+.fpms-err  { color: #c9190b; }
+.fpms-dim  { color: var(--pf-global--Color--200, #6a6e73); }
+
+/* ── Responsive: narrow screens ─────────────────────────── */
+
+@media (max-width: 700px) {
+    .fpms-grid {
+        grid-template-columns: 1fr;
+    }
+    .fpms-right {
+        min-height: 300px;
+    }
+}
