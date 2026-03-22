@@ -73,6 +73,16 @@ class DateTimeInfo(BaseModel):
     tz_abbrev: str = ""
 
 
+class ModeSwitch(BaseModel):
+    mode: str = ""
+    status: str = ""
+
+
+class SsidPassphrase(BaseModel):
+    ssid: str = ""
+    passphrase: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Bluetooth
 # ---------------------------------------------------------------------------
@@ -124,6 +134,37 @@ class UsbInfo(BaseModel):
 class UfwInfo(BaseModel):
     status: str = ""
     ports: list[Any] = Field(default_factory=list)
+
+
+class PublicIpInfo(BaseModel):
+    lines: list[str] = Field(default_factory=list)
+
+
+class SpeedtestResult(BaseModel):
+    lines: list[str] = Field(default_factory=list)
+
+
+class CloudTestResult(BaseModel):
+    vendor: str = ""
+    lines: list[str] = Field(default_factory=list)
+    success: bool = False
+
+
+class ScanNetwork(BaseModel):
+    ssid: str = ""
+    bssid: str = ""
+    channel: Optional[int] = None
+    rssi: int = 0
+    hidden: bool = False
+
+
+class ScanResults(BaseModel):
+    networks: list[ScanNetwork] = Field(default_factory=list)
+
+
+class ProfilerPurge(BaseModel):
+    success: bool = False
+    message: str = ""
 
 
 # ---------------------------------------------------------------------------

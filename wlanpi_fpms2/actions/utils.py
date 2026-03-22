@@ -66,60 +66,76 @@ async def show_ufw(ctx: ActionContext) -> PageContent:
 
 
 async def show_speedtest(ctx: ActionContext) -> PageContent:
-    """Run speedtest. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Speedtest",
-        lines=[
-            "Not yet available.",
-            "Requires wlanpi-core",
-            "speedtest endpoint.",
-        ],
-    )
+    """Run speedtest via wlanpi-core."""
+    if ctx.core_client is None:
+        return _unavailable("Speedtest")
+    try:
+        result = await ctx.core_client.run_speedtest()
+        lines = result.lines or ["No speedtest output"]
+        return PageContent(title="Speedtest", lines=lines)
+    except Exception as exc:
+        return _error("Speedtest", exc)
 
 
 async def port_blinker_start(ctx: ActionContext) -> PageContent:
-    """Start port blinker. Requires wlanpi-core gap endpoint."""
+    """Start port blinker. Not yet available in wlanpi-core."""
     return PageContent(
         title="Port Blinker",
-        lines=["Not yet available.", "Requires wlanpi-core", "port-blinker endpoint."],
+        lines=["Not yet available.", "wlanpi-core endpoint", "not implemented."],
     )
 
 
 async def port_blinker_stop(ctx: ActionContext) -> PageContent:
-    """Stop port blinker. Requires wlanpi-core gap endpoint."""
+    """Stop port blinker. Not yet available in wlanpi-core."""
     return PageContent(
         title="Port Blinker",
-        lines=["Not yet available.", "Requires wlanpi-core", "port-blinker endpoint."],
+        lines=["Not yet available.", "wlanpi-core endpoint", "not implemented."],
     )
 
 
 async def show_ssid_passphrase(ctx: ActionContext) -> PageContent:
-    """Show hotspot SSID and passphrase. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="SSID/Passphrase",
-        lines=[
-            "Not yet available.",
-            "Requires wlanpi-core",
-            "hostapd endpoint.",
-        ],
-    )
+    """Show hotspot SSID and passphrase from hostapd.conf."""
+    if ctx.core_client is None:
+        return _unavailable("SSID/Passphrase")
+    try:
+        result = await ctx.core_client.get_ssid_passphrase()
+        return PageContent(
+            title="SSID/Passphrase",
+            lines=[f"SSID: {result.ssid}", f"Pass: {result.passphrase}"],
+        )
+    except Exception as exc:
+        return _error("SSID/Passphrase", exc)
 
 
 # ---------------------------------------------------------------------------
 # Cloud tests (stubs until wlanpi-core endpoints exist)
 # ---------------------------------------------------------------------------
 
-def _make_cloud_test(vendor: str):
+_CLOUD_VENDOR_KEYS = {
+    "Arista CV-CUE":    "arista",
+    "Aruba Central":    "aruba",
+    "ExtremeCloud IQ":  "extreme",
+    "Meraki Cloud":     "meraki",
+    "Mist Cloud":       "mist",
+    "RUCKUS Cloud":     "ruckus",
+}
+
+
+def _make_cloud_test(vendor_label: str):
+    vendor_key = _CLOUD_VENDOR_KEYS[vendor_label]
+
     async def _action(ctx: ActionContext) -> PageContent:
-        return PageContent(
-            title=f"{vendor} Test",
-            lines=[
-                "Not yet available.",
-                "Requires wlanpi-core",
-                "cloud-test endpoint.",
-            ],
-        )
-    _action.__name__ = f"test_{vendor.lower().replace(' ', '_')}"
+        if ctx.core_client is None:
+            return _unavailable(vendor_label)
+        try:
+            result = await ctx.core_client.run_cloud_test(vendor_key)
+            lines = result.lines or ["No results"]
+            status = "PASS" if result.success else "FAIL"
+            return PageContent(title=f"{vendor_label}: {status}", lines=lines)
+        except Exception as exc:
+            return _error(vendor_label, exc)
+
+    _action.__name__ = f"test_{vendor_key}"
     return _action
 
 
@@ -137,14 +153,17 @@ test_ruckus  = _make_cloud_test("RUCKUS Cloud")
 
 def _make_mode_switcher(target_mode: str):
     async def _action(ctx: ActionContext) -> PageContent:
-        return PageContent(
-            title=f"Switch to {target_mode.title()}",
-            lines=[
-                "Not yet available.",
-                "Requires wlanpi-core",
-                "mode endpoint.",
-            ],
-        )
+        if ctx.core_client is None:
+            return _unavailable(f"Switch to {target_mode.title()}")
+        try:
+            result = await ctx.core_client.switch_mode(target_mode)
+            return PageContent(
+                title=f"Switch to {target_mode.title()}",
+                lines=[result.status, "Rebooting..."],
+                alert=AlertContent(level="info", message=result.status),
+            )
+        except Exception as exc:
+            return _error(f"Switch to {target_mode.title()}", exc)
     _action.__name__ = f"switch_to_{target_mode}"
     return _action
 

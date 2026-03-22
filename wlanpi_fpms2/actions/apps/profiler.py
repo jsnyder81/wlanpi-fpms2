@@ -68,19 +68,39 @@ profiler_start_no11ax = _make_profiler_start("no 11ax")
 
 
 async def profiler_purge_reports(ctx: ActionContext) -> PageContent:
-    """Purge profiler reports. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Purge Reports",
-        lines=["Not yet available.", "Requires wlanpi-core", "profiler/purge endpoint."],
-    )
+    """Purge profiler report files."""
+    if ctx.core_client is None:
+        return _unavailable("Purge Reports")
+    try:
+        result = await ctx.core_client.profiler_purge_reports()
+        return PageContent(
+            title="Purge Reports",
+            lines=[result.message if result.success else "Purge failed"],
+            alert=AlertContent(
+                level="info" if result.success else "error",
+                message=result.message,
+            ),
+        )
+    except Exception as exc:
+        return _error("Purge Reports", exc)
 
 
 async def profiler_purge_files(ctx: ActionContext) -> PageContent:
-    """Purge profiler files. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Purge Files",
-        lines=["Not yet available.", "Requires wlanpi-core", "profiler/purge endpoint."],
-    )
+    """Purge all profiler files."""
+    if ctx.core_client is None:
+        return _unavailable("Purge Files")
+    try:
+        result = await ctx.core_client.profiler_purge_files()
+        return PageContent(
+            title="Purge Files",
+            lines=[result.message if result.success else "Purge failed"],
+            alert=AlertContent(
+                level="info" if result.success else "error",
+                message=result.message,
+            ),
+        )
+    except Exception as exc:
+        return _error("Purge Files", exc)
 
 
 def _unavailable(title: str) -> PageContent:

@@ -20,14 +20,21 @@ from wlanpi_fpms2.core_client.hmac_auth import HmacAuth
 from wlanpi_fpms2.core_client.models import (
     BatteryInfo,
     BluetoothStatus,
+    CloudTestResult,
     DateTimeInfo,
     DeviceInfo,
     DeviceStats,
     IPInterface,
+    ModeSwitch,
     NetworkInfo,
+    ProfilerPurge,
+    PublicIpInfo,
     ReachabilityTest,
     RegDomainInfo,
+    ScanResults,
     ServiceStatus,
+    SpeedtestResult,
+    SsidPassphrase,
     TimezoneInfo,
     TimezoneList,
     UfwInfo,
@@ -238,3 +245,63 @@ class CoreApiClient:
     async def get_datetime(self) -> DateTimeInfo:
         data = await self._get("/system/datetime")
         return DateTimeInfo.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # Mode switching
+    # ------------------------------------------------------------------
+
+    async def switch_mode(self, mode: str) -> ModeSwitch:
+        data = await self._post("/system/mode/switch", json={"mode": mode})
+        return ModeSwitch.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # SSID / Passphrase
+    # ------------------------------------------------------------------
+
+    async def get_ssid_passphrase(self) -> SsidPassphrase:
+        data = await self._get("/system/ssid-passphrase")
+        return SsidPassphrase.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # Public IPv6
+    # ------------------------------------------------------------------
+
+    async def get_public_ipv6(self) -> PublicIpInfo:
+        data = await self._get("/network/info/publicip6")
+        return PublicIpInfo.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # Speedtest
+    # ------------------------------------------------------------------
+
+    async def run_speedtest(self) -> SpeedtestResult:
+        data = await self._get("/utils/speedtest")
+        return SpeedtestResult.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # Cloud tests
+    # ------------------------------------------------------------------
+
+    async def run_cloud_test(self, vendor: str) -> CloudTestResult:
+        data = await self._get(f"/utils/cloud-test/{vendor}")
+        return CloudTestResult.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # WLAN scanner
+    # ------------------------------------------------------------------
+
+    async def scan_wlan(self, iface: str = "wlan0", hidden: bool = True) -> ScanResults:
+        data = await self._get("/utils/wlan/scan", params={"iface": iface, "hidden": str(hidden).lower()})
+        return ScanResults.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # Profiler purge
+    # ------------------------------------------------------------------
+
+    async def profiler_purge_reports(self) -> ProfilerPurge:
+        data = await self._post("/profiler/purge/reports")
+        return ProfilerPurge.model_validate(data)
+
+    async def profiler_purge_files(self) -> ProfilerPurge:
+        data = await self._post("/profiler/purge/files")
+        return ProfilerPurge.model_validate(data)

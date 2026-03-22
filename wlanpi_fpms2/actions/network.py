@@ -157,11 +157,15 @@ async def show_publicip4(ctx: ActionContext) -> PageContent:
 
 
 async def show_publicip6(ctx: ActionContext) -> PageContent:
-    """Show public IPv6 address. Stub until dedicated endpoint exists."""
-    return PageContent(
-        title="Public IPv6",
-        lines=["Not yet available.", "Requires wlanpi-core", "gap endpoint."],
-    )
+    """Show public IPv6 address."""
+    if ctx.core_client is None:
+        return _unavailable("Public IPv6")
+    try:
+        result = await ctx.core_client.get_public_ipv6()
+        lines = result.lines or ["No IPv6 address detected"]
+        return PageContent(title="Public IPv6", lines=lines)
+    except Exception as exc:
+        return _error("Public IPv6", exc)
 
 
 # ---------------------------------------------------------------------------
