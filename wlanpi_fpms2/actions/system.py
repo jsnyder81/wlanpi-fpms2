@@ -47,59 +47,106 @@ async def show_summary(ctx: ActionContext) -> PageContent:
 
 
 async def show_battery(ctx: ActionContext) -> PageContent:
-    """Show battery status. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Battery",
-        lines=[
-            "Not yet available.",
-            "Requires wlanpi-core",
-            "battery endpoint.",
-        ],
-    )
+    """Show battery status."""
+    if ctx.core_client is None:
+        return _unavailable("Battery")
+    try:
+        bat = await ctx.core_client.get_battery()
+        if not bat.present:
+            return PageContent(title="Battery", lines=["No battery installed"])
+        lines = [f"Status: {bat.status.capitalize()}" if bat.status else ""]
+        if bat.charge_pct is not None:
+            lines.append(f"Charge: {bat.charge_pct}%")
+        if bat.voltage_v is not None:
+            lines.append(f"Voltage: {bat.voltage_v}V")
+        if bat.cycle_count is not None:
+            lines.append(f"Cycles: {bat.cycle_count}")
+        return PageContent(title="Battery", lines=[l for l in lines if l])
+    except Exception as exc:
+        return _error("Battery", exc)
 
 
 async def show_date(ctx: ActionContext) -> PageContent:
-    """Show current date/time and timezone. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Date & Time",
-        lines=[
-            "Not yet available.",
-            "Requires wlanpi-core",
-            "timezone endpoint.",
-        ],
-    )
+    """Show current date/time and timezone."""
+    if ctx.core_client is None:
+        return _unavailable("Date & Time")
+    try:
+        dt = await ctx.core_client.get_datetime()
+        lines = [
+            dt.date_str,
+            dt.time_str,
+            dt.city if dt.city else dt.timezone,
+            f"TZ: {dt.tz_abbrev}" if dt.tz_abbrev else dt.timezone,
+        ]
+        return PageContent(title="Date & Time", lines=[l for l in lines if l])
+    except Exception as exc:
+        return _error("Date & Time", exc)
 
 
 async def set_timezone_auto(ctx: ActionContext) -> PageContent:
-    """Auto-detect and set timezone. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Set Timezone",
-        lines=["Not yet available."],
-    )
+    """Auto-detect and set timezone via tzupdate."""
+    if ctx.core_client is None:
+        return _unavailable("Set Timezone")
+    try:
+        tz_info = await ctx.core_client.set_timezone_auto()
+        return PageContent(
+            title="Set Timezone",
+            lines=[
+                "Auto-detect complete.",
+                f"Timezone: {tz_info.timezone}",
+                f"City: {tz_info.city}",
+            ],
+        )
+    except Exception as exc:
+        return _error("Set Timezone", exc)
 
 
 async def set_timezone(ctx: ActionContext) -> PageContent:
-    """Set timezone from selection. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Set Timezone",
-        lines=["Not yet available."],
-    )
+    """Show current timezone (manual selection handled via menu)."""
+    if ctx.core_client is None:
+        return _unavailable("Timezone")
+    try:
+        tz_info = await ctx.core_client.get_timezone()
+        return PageContent(
+            title="Timezone",
+            lines=[
+                f"Current: {tz_info.timezone}",
+                f"City: {tz_info.city}",
+            ],
+        )
+    except Exception as exc:
+        return _error("Timezone", exc)
 
 
 async def show_reg_domain(ctx: ActionContext) -> PageContent:
-    """Show current RF regulatory domain. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="RF Domain",
-        lines=["Not yet available.", "Requires wlanpi-core", "reg-domain endpoint."],
-    )
+    """Show current RF regulatory domain."""
+    if ctx.core_client is None:
+        return _unavailable("RF Domain")
+    try:
+        rd = await ctx.core_client.get_reg_domain()
+        lines = [f"Domain: {rd.reg_domain}"] + rd.lines[1:]  # skip duplicate first line
+        return PageContent(title="RF Domain", lines=lines if lines else [rd.reg_domain])
+    except Exception as exc:
+        return _error("RF Domain", exc)
 
 
 def _make_set_reg_domain(code: str):
     async def _action(ctx: ActionContext) -> PageContent:
-        return PageContent(
-            title=f"Set Domain {code.upper()}",
-            lines=["Not yet available.", "Requires wlanpi-core", "reg-domain endpoint."],
-        )
+        if ctx.core_client is None:
+            return _unavailable(f"Set Domain {code.upper()}")
+        try:
+            await ctx.core_client.set_reg_domain(code.upper())
+            await ctx.store.set_shutdown(True)
+            return PageContent(
+                title=f"Domain: {code.upper()}",
+                lines=[
+                    f"Domain set to {code.upper()}.",
+                    "Rebooting device...",
+                ],
+                alert=AlertContent(level="info", message="Rebooting..."),
+            )
+        except Exception as exc:
+            return _error(f"Set Domain {code.upper()}", exc)
     _action.__name__ = f"set_reg_domain_{code}"
     return _action
 
@@ -126,19 +173,33 @@ async def rotate_display(ctx: ActionContext) -> PageContent:
 
 
 async def check_updates(ctx: ActionContext) -> PageContent:
-    """Check for available updates. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Check Updates",
-        lines=["Not yet available.", "Requires wlanpi-core", "updates endpoint."],
-    )
+    """Check for available wlanpi-* package updates."""
+    if ctx.core_client is None:
+        return _unavailable("Check Updates")
+    try:
+        info = await ctx.core_client.get_updates()
+        if info.count == 0:
+            lines = ["System up to date"]
+        else:
+            lines = [f"{u.package}: {u.version}" for u in info.updates]
+        return PageContent(title=f"Updates ({info.count})", lines=lines)
+    except Exception as exc:
+        return _error("Check Updates", exc)
 
 
 async def install_updates(ctx: ActionContext) -> PageContent:
-    """Install available updates. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Install Updates",
-        lines=["Not yet available.", "Requires wlanpi-core", "updates endpoint."],
-    )
+    """Install available wlanpi-* package updates."""
+    if ctx.core_client is None:
+        return _unavailable("Install Updates")
+    try:
+        await ctx.core_client.install_updates()
+        return PageContent(
+            title="Install Updates",
+            lines=["Updates installed.", "Reboot recommended."],
+            alert=AlertContent(level="info", message="Updates installed"),
+        )
+    except Exception as exc:
+        return _error("Install Updates", exc)
 
 
 async def reboot(ctx: ActionContext) -> PageContent:

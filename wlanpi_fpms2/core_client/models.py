@@ -33,6 +33,46 @@ class ServiceStatus(BaseModel):
     active: bool
 
 
+class TimezoneInfo(BaseModel):
+    timezone: str = "UTC"
+    city: str = ""
+
+
+class TimezoneList(BaseModel):
+    timezones: list[str] = Field(default_factory=list)
+
+
+class RegDomainInfo(BaseModel):
+    reg_domain: str = ""
+    lines: list[str] = Field(default_factory=list)
+
+
+class UpdatePackage(BaseModel):
+    package: str = ""
+    version: str = ""
+
+
+class UpdatesInfo(BaseModel):
+    updates: list[UpdatePackage] = Field(default_factory=list)
+    count: int = 0
+
+
+class BatteryInfo(BaseModel):
+    present: bool = False
+    status: str = ""
+    charge_pct: Optional[int] = None
+    voltage_v: Optional[float] = None
+    cycle_count: Optional[int] = None
+
+
+class DateTimeInfo(BaseModel):
+    date_str: str = ""
+    time_str: str = ""
+    timezone: str = ""
+    city: str = ""
+    tz_abbrev: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Bluetooth
 # ---------------------------------------------------------------------------

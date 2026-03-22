@@ -97,7 +97,7 @@ async def homepage_refresh_loop(
             if now - _last_reachability_at > _REACHABILITY_TTL:
                 try:
                     reach = await core_client.get_reachability()
-                    _last_reachability = "ok" in reach.ping_google.lower()
+                    _last_reachability = reach.browse_google.upper() == "OK"
                     _last_reachability_at = now
                 except Exception:
                     _last_reachability = None

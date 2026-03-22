@@ -18,14 +18,20 @@ import httpx
 
 from wlanpi_fpms2.core_client.hmac_auth import HmacAuth
 from wlanpi_fpms2.core_client.models import (
+    BatteryInfo,
     BluetoothStatus,
+    DateTimeInfo,
     DeviceInfo,
     DeviceStats,
     IPInterface,
     NetworkInfo,
     ReachabilityTest,
+    RegDomainInfo,
     ServiceStatus,
+    TimezoneInfo,
+    TimezoneList,
     UfwInfo,
+    UpdatesInfo,
     UsbInfo,
     WlanInterfaces,
 )
@@ -173,3 +179,62 @@ class CoreApiClient:
 
     async def shutdown(self) -> dict:
         return await self._post("/system/shutdown")
+
+    # ------------------------------------------------------------------
+    # Timezone
+    # ------------------------------------------------------------------
+
+    async def get_timezone(self) -> TimezoneInfo:
+        data = await self._get("/system/timezone")
+        return TimezoneInfo.model_validate(data)
+
+    async def list_timezones(self) -> TimezoneList:
+        data = await self._get("/system/timezone/list")
+        return TimezoneList.model_validate(data)
+
+    async def set_timezone(self, timezone: str) -> TimezoneInfo:
+        data = await self._post("/system/timezone/set", json={"timezone": timezone})
+        return TimezoneInfo.model_validate(data)
+
+    async def set_timezone_auto(self) -> TimezoneInfo:
+        data = await self._post("/system/timezone/auto")
+        return TimezoneInfo.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # Regulatory Domain
+    # ------------------------------------------------------------------
+
+    async def get_reg_domain(self) -> RegDomainInfo:
+        data = await self._get("/system/reg-domain")
+        return RegDomainInfo.model_validate(data)
+
+    async def set_reg_domain(self, country: str) -> RegDomainInfo:
+        data = await self._post("/system/reg-domain/set", json={"country": country})
+        return RegDomainInfo.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # Updates
+    # ------------------------------------------------------------------
+
+    async def get_updates(self) -> UpdatesInfo:
+        data = await self._get("/system/updates")
+        return UpdatesInfo.model_validate(data)
+
+    async def install_updates(self) -> dict:
+        return await self._post("/system/updates/install")
+
+    # ------------------------------------------------------------------
+    # Battery
+    # ------------------------------------------------------------------
+
+    async def get_battery(self) -> BatteryInfo:
+        data = await self._get("/system/battery")
+        return BatteryInfo.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # Date / Time
+    # ------------------------------------------------------------------
+
+    async def get_datetime(self) -> DateTimeInfo:
+        data = await self._get("/system/datetime")
+        return DateTimeInfo.model_validate(data)
