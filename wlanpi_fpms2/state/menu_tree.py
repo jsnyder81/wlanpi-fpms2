@@ -20,6 +20,7 @@ from wlanpi_fpms2.state.models import MenuNode
 class MenuTree:
     index: dict[str, MenuNode] = field(default_factory=dict)
     roots: list[str] = field(default_factory=list)
+    mode: str = "classic"
 
     def node(self, node_id: str) -> MenuNode | None:
         return self.index.get(node_id)
@@ -98,7 +99,7 @@ def build_menu_tree(
     Returns:
         MenuTree with .index (all nodes) and .roots (top-level IDs).
     """
-    tree = MenuTree()
+    tree = MenuTree(mode=mode)
 
     # ------------------------------------------------------------------
     # Network
