@@ -46,6 +46,20 @@ class MenuTree:
             current_ids = node.children
         return node
 
+    def find_path(self, node_id: str) -> list[int] | None:
+        """Return the index path to reach node_id from root, or None if not found."""
+        def dfs(ids: list[str], current: list[int]) -> list[int] | None:
+            for i, nid in enumerate(ids):
+                if nid == node_id:
+                    return current + [i]
+                node = self.index.get(nid)
+                if node and node.children:
+                    result = dfs(node.children, current + [i])
+                    if result is not None:
+                        return result
+            return None
+        return dfs(self.roots, [])
+
     def siblings_of_path(self, path: list[int]) -> list[str]:
         """Return sibling IDs at the current path level."""
         if not path:

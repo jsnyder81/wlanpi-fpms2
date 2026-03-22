@@ -130,6 +130,41 @@ def handle_input(
     return NavResult(nav=nav)
 
 
+def navigate_to_node(state: FpmsState, node_id: str, tree: MenuTree) -> NavResult:
+    """Jump directly to a node by ID without simulating button presses.
+
+    Branch node → enter its submenu (first child selected).
+    Leaf node   → select it and return action_id for dispatch.
+    Returns the unchanged nav if node_id is not found.
+    """
+    path = tree.find_path(node_id)
+    if path is None:
+        return NavResult(nav=state.nav.model_copy(deep=True))
+
+    node = tree.index.get(node_id)
+    if node is None:
+        return NavResult(nav=state.nav.model_copy(deep=True))
+
+    nav = state.nav.model_copy(deep=True)
+
+    if node.children:
+        # Branch: enter the submenu with the first child selected
+        nav.path = path + [0]
+        nav.display_state = "menu"
+        return NavResult(nav=nav)
+
+    if node.action_id:
+        # Leaf: navigate to it and dispatch its action
+        nav.path = path
+        nav.display_state = "page"
+        return NavResult(nav=nav, action_id=node.action_id)
+
+    # Branch with no children or leaf with no action — just select it
+    nav.path = path
+    nav.display_state = "menu"
+    return NavResult(nav=nav)
+
+
 def path_node_name(path: list[int], tree: MenuTree) -> str:
     """Return the name of the node at the given path, or empty string."""
     node = tree.resolve_path(path)

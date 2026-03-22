@@ -118,6 +118,11 @@ class ComplicationUpdate(BaseModel):
     ttl_seconds: int = 30
 
 
+class NavigateRequest(BaseModel):
+    """Body for POST /navigate — jump directly to a menu node by ID."""
+    node_id: str
+
+
 # ---------------------------------------------------------------------------
 # FPMS global state (broadcast to all clients)
 # ---------------------------------------------------------------------------

@@ -205,6 +205,29 @@
     to { transform: rotate(360deg); }
 }
 
+/* ── Breadcrumb links ───────────────────────────────────── */
+
+.fpms-breadcrumb-link {
+    cursor: pointer;
+    color: var(--pf-global--primary-color--100, #0066cc);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.fpms-breadcrumb-link:hover {
+    color: var(--pf-global--primary-color--200, #004c99);
+    text-decoration-style: solid;
+}
+
+.fpms-breadcrumb-current {
+    color: var(--pf-global--Color--100, #151515);
+    font-weight: 500;
+}
+
+.fpms-breadcrumb-sep {
+    color: var(--pf-global--Color--200, #6a6e73);
+}
+
 /* ── Panels ─────────────────────────────────────────────── */
 
 .fpms-panel {

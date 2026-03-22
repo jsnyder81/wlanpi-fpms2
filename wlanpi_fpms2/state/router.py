@@ -26,8 +26,9 @@ from wlanpi_fpms2.state.models import (
     FpmsState,
     InputEvent,
     MenuNode,
+    NavigateRequest,
 )
-from wlanpi_fpms2.nav.navigator import NavResult, handle_input
+from wlanpi_fpms2.nav.navigator import NavResult, handle_input, navigate_to_node
 
 if TYPE_CHECKING:
     from wlanpi_fpms2.state.store import FpmsStateStore
@@ -162,6 +163,47 @@ async def _run_action(
             lines=[str(exc)],
             alert=AlertContent(level="error", message=str(exc)),
         ))
+
+
+# ---------------------------------------------------------------------------
+# Direct navigation
+# ---------------------------------------------------------------------------
+
+@router.post("/navigate", status_code=202)
+async def post_navigate(nav_req: NavigateRequest, request: Request) -> dict:
+    """Jump directly to a menu node by ID.
+
+    Branch node: enters its submenu.
+    Leaf node:   navigates to it and dispatches its action.
+    """
+    store = _get_store(request)
+    tree = _get_tree(request)
+    registry = _get_action_registry(request)
+    state = store.snapshot()
+
+    if state.shutdown_in_progress:
+        return {"status": "shutdown_in_progress"}
+    if state.loading:
+        return {"status": "loading"}
+
+    result: NavResult = navigate_to_node(state, nav_req.node_id, tree)
+
+    await store.apply_nav(result.nav)
+    await store.set_scroll(0, 0)
+
+    if result.action_id:
+        action_fn = registry.get(result.action_id)
+        if action_fn is None:
+            log.warning("No action registered for %s", result.action_id)
+            await store.set_page(None)
+        else:
+            await store.set_loading(True)
+            task = asyncio.create_task(
+                _run_action(action_fn, result.action_id, store, request)
+            )
+            store.set_action_task(task)
+
+    return {"status": "ok"}
 
 
 # ---------------------------------------------------------------------------

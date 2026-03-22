@@ -68,7 +68,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // Button input
+    // Button input + direct navigation
     // -----------------------------------------------------------------------
 
     function sendButton(btn) {
@@ -83,6 +83,21 @@
             })
             .fail(function (err) {
                 console.warn("fpms: failed to send button", btn, err);
+            });
+    }
+
+    /** Jump directly to a node by ID via POST /navigate. */
+    function navigateTo(nodeId) {
+        http.post(
+            "/navigate",
+            JSON.stringify({ node_id: nodeId }),
+            { "Content-Type": "application/json" }
+        )
+            .done(function () {
+                setTimeout(pollState, BUTTON_WAIT);
+            })
+            .fail(function (err) {
+                console.warn("fpms: navigate failed for", nodeId, err);
             });
     }
 
@@ -166,38 +181,20 @@
             var node = menuIndex[nodeId];
             if (!node) return;
 
-            var li        = document.createElement("li");
+            var li         = document.createElement("li");
             var isSelected = (i === currentIdx);
-            li.className  = "fpms-menu-item" + (isSelected ? " fpms-menu-selected" : "");
+            li.className   = "fpms-menu-item" + (isSelected ? " fpms-menu-selected" : "");
 
             var arrow = (node.children && node.children.length) ? "▸ " : "   ";
             li.textContent = arrow + node.name;
 
-            // Clicking a non-selected item navigates to it via button presses
-            li.addEventListener("click", function () {
-                navigateToIndex(currentIdx, i);
-            });
+            // Direct navigation: jump straight to this node
+            li.addEventListener("click", (function (nid) {
+                return function () { navigateTo(nid); };
+            })(nodeId));
 
             list.appendChild(li);
         });
-    }
-
-    /** Send up/down presses to reach toIdx, then select with right. */
-    function navigateToIndex(fromIdx, toIdx) {
-        if (fromIdx === toIdx) {
-            sendButton("right");
-            return;
-        }
-        var dir   = toIdx > fromIdx ? "down" : "up";
-        var steps = Math.abs(toIdx - fromIdx);
-        var delay = 0;
-        for (var i = 0; i < steps; i++) {
-            (function (d) {
-                setTimeout(function () { sendButton(dir); }, d);
-            })(delay);
-            delay += 100;
-        }
-        setTimeout(function () { sendButton("right"); }, delay);
     }
 
     // -----------------------------------------------------------------------
@@ -239,31 +236,79 @@
     }
 
     // -----------------------------------------------------------------------
-    // Breadcrumb
+    // Breadcrumb (clickable ancestors)
     // -----------------------------------------------------------------------
 
     function renderBreadcrumb(state, display) {
+        var container = el("breadcrumb");
+
         if (display === "home") {
-            el("breadcrumb").textContent = "Home";
+            container.textContent = "Home";
             return;
         }
 
-        var path   = (state.nav && state.nav.path) || [0];
-        var parts  = ["Main Menu"];
-        var ids    = topLevelNodeIds();
+        var path  = (state.nav && state.nav.path) || [0];
+        // Build parts as [{name, nodeId}]; nodeId=null for "Main Menu"
+        var parts = [{ name: "Main Menu", nodeId: null }];
+        var ids   = topLevelNodeIds();
 
         for (var depth = 0; depth < path.length - 1; depth++) {
-            var node = menuIndex[ids[path[depth]]];
+            var nodeId = ids[path[depth]];
+            var node   = menuIndex[nodeId];
             if (!node) break;
-            parts.push(node.name);
+            parts.push({ name: node.name, nodeId: nodeId });
             ids = node.children || [];
         }
 
         if (display === "page" && state.current_page) {
-            parts.push(state.current_page.title);
+            parts.push({ name: state.current_page.title, nodeId: null });
         }
 
-        el("breadcrumb").textContent = parts.join(" › ");
+        // Render each part: ancestors are clickable, last is plain text
+        container.innerHTML = "";
+        parts.forEach(function (part, i) {
+            if (i > 0) {
+                var sep = document.createElement("span");
+                sep.className   = "fpms-breadcrumb-sep";
+                sep.textContent = " › ";
+                container.appendChild(sep);
+            }
+
+            var span      = document.createElement("span");
+            var isLast    = (i === parts.length - 1);
+
+            if (!isLast) {
+                span.className   = "fpms-breadcrumb-link";
+                span.textContent = part.name;
+
+                if (part.nodeId) {
+                    // Branch ancestor: jump directly via POST /navigate
+                    span.addEventListener("click", (function (nid) {
+                        return function () { navigateTo(nid); };
+                    })(part.nodeId));
+                } else {
+                    // "Main Menu": send left presses to return to root
+                    var leftsNeeded = parts.length - 1 - i;
+                    span.addEventListener("click", (function (n) {
+                        return function () { navigateLeftN(n); };
+                    })(leftsNeeded));
+                }
+            } else {
+                span.className   = "fpms-breadcrumb-current";
+                span.textContent = part.name;
+            }
+
+            container.appendChild(span);
+        });
+    }
+
+    /** Send n left-button presses with a small stagger between each. */
+    function navigateLeftN(n) {
+        for (var i = 0; i < n; i++) {
+            (function (delay) {
+                setTimeout(function () { sendButton("left"); }, delay);
+            })(i * 150);
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -378,6 +423,26 @@
         btn.addEventListener("click", function () {
             sendButton(btn.getAttribute("data-button"));
         });
+    });
+
+    // Keyboard shortcuts
+    var KEY_MAP = {
+        ArrowUp:    "up",
+        ArrowDown:  "down",
+        ArrowLeft:  "left",
+        ArrowRight: "right",
+        Enter:      "center",
+        Escape:     "left",
+        Backspace:  "left",
+        F1:         "key1",
+        F2:         "key2",
+        F3:         "key3",
+    };
+    document.addEventListener("keydown", function (e) {
+        var btn = KEY_MAP[e.key];
+        if (!btn) return;
+        e.preventDefault();
+        sendButton(btn);
     });
 
     fetchMenu();
