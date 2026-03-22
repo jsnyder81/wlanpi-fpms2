@@ -133,10 +133,26 @@ def handle_input(
 def navigate_to_node(state: FpmsState, node_id: str, tree: MenuTree) -> NavResult:
     """Jump directly to a node by ID without simulating button presses.
 
+    Special virtual destinations:
+      "__home__"       → home screen
+      "__main_menu__"  → top-level menu (path=[0])
+
     Branch node → enter its submenu (first child selected).
     Leaf node   → select it and return action_id for dispatch.
     Returns the unchanged nav if node_id is not found.
     """
+    if node_id == "__home__":
+        nav = state.nav.model_copy(deep=True)
+        nav.display_state = "home"
+        nav.path = [0]
+        return NavResult(nav=nav)
+
+    if node_id == "__main_menu__":
+        nav = state.nav.model_copy(deep=True)
+        nav.display_state = "menu"
+        nav.path = [0]
+        return NavResult(nav=nav)
+
     path = tree.find_path(node_id)
     if path is None:
         return NavResult(nav=state.nav.model_copy(deep=True))

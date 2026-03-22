@@ -248,9 +248,11 @@
         }
 
         var path  = (state.nav && state.nav.path) || [0];
-        // Build parts as [{name, nodeId}]; nodeId=null for virtual roots
-        var parts = [{ name: "Home", nodeId: null }, { name: "Main Menu", nodeId: null }];
-        var ids   = topLevelNodeIds();
+        var parts = [
+            { name: "Home",      nodeId: "__home__" },
+            { name: "Main Menu", nodeId: "__main_menu__" },
+        ];
+        var ids = topLevelNodeIds();
 
         for (var depth = 0; depth < path.length - 1; depth++) {
             var nodeId = ids[path[depth]];
@@ -264,7 +266,7 @@
             parts.push({ name: state.current_page.title, nodeId: null });
         }
 
-        // Render each part: ancestors are clickable, last is plain text
+        // All non-last parts are clickable via POST /navigate
         container.innerHTML = "";
         parts.forEach(function (part, i) {
             if (i > 0) {
@@ -274,25 +276,15 @@
                 container.appendChild(sep);
             }
 
-            var span      = document.createElement("span");
-            var isLast    = (i === parts.length - 1);
+            var span   = document.createElement("span");
+            var isLast = (i === parts.length - 1);
 
-            if (!isLast) {
+            if (!isLast && part.nodeId) {
                 span.className   = "fpms-breadcrumb-link";
                 span.textContent = part.name;
-
-                if (part.nodeId) {
-                    // Branch ancestor: jump directly via POST /navigate
-                    span.addEventListener("click", (function (nid) {
-                        return function () { navigateTo(nid); };
-                    })(part.nodeId));
-                } else {
-                    // "Main Menu": send left presses to return to root
-                    var leftsNeeded = parts.length - 1 - i;
-                    span.addEventListener("click", (function (n) {
-                        return function () { navigateLeftN(n); };
-                    })(leftsNeeded));
-                }
+                span.addEventListener("click", (function (nid) {
+                    return function () { navigateTo(nid); };
+                })(part.nodeId));
             } else {
                 span.className   = "fpms-breadcrumb-current";
                 span.textContent = part.name;
@@ -300,15 +292,6 @@
 
             container.appendChild(span);
         });
-    }
-
-    /** Send n left-button presses with a small stagger between each. */
-    function navigateLeftN(n) {
-        for (var i = 0; i < n; i++) {
-            (function (delay) {
-                setTimeout(function () { sendButton("left"); }, delay);
-            })(i * 150);
-        }
     }
 
     // -----------------------------------------------------------------------
