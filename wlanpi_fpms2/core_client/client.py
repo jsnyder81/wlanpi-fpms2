@@ -167,3 +167,9 @@ class CoreApiClient:
     async def get_ufw(self) -> UfwInfo:
         data = await self._get("/utils/ufw")
         return UfwInfo.model_validate(data)
+
+    async def reboot(self) -> dict:
+        return await self._post("/system/reboot")
+
+    async def shutdown(self) -> dict:
+        return await self._post("/system/shutdown")

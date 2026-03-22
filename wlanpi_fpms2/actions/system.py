@@ -142,21 +142,35 @@ async def install_updates(ctx: ActionContext) -> PageContent:
 
 
 async def reboot(ctx: ActionContext) -> PageContent:
-    """Reboot the device. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Rebooting...",
-        lines=["Not yet available.", "Requires wlanpi-core", "reboot endpoint."],
-        alert=AlertContent(level="info", message="Rebooting..."),
-    )
+    """Reboot the device via wlanpi-core."""
+    if ctx.core_client is None:
+        return _unavailable("Reboot")
+    try:
+        await ctx.core_client.reboot()
+        await ctx.store.set_shutdown(True)
+        return PageContent(
+            title="Rebooting...",
+            lines=["Device will reboot", "in a few seconds."],
+            alert=AlertContent(level="info", message="Rebooting..."),
+        )
+    except Exception as exc:
+        return _error("Reboot", exc)
 
 
 async def shutdown(ctx: ActionContext) -> PageContent:
-    """Shutdown the device. Requires wlanpi-core gap endpoint."""
-    return PageContent(
-        title="Shutting Down...",
-        lines=["Not yet available.", "Requires wlanpi-core", "shutdown endpoint."],
-        alert=AlertContent(level="info", message="Shutting down..."),
-    )
+    """Shutdown the device via wlanpi-core."""
+    if ctx.core_client is None:
+        return _unavailable("Shutdown")
+    try:
+        await ctx.core_client.shutdown()
+        await ctx.store.set_shutdown(True)
+        return PageContent(
+            title="Shutting Down...",
+            lines=["Device will shut down", "in a few seconds."],
+            alert=AlertContent(level="info", message="Shutting down..."),
+        )
+    except Exception as exc:
+        return _error("Shutdown", exc)
 
 
 async def show_help(ctx: ActionContext) -> PageContent:
