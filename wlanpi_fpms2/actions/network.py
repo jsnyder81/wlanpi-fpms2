@@ -126,10 +126,7 @@ async def show_lldp(ctx: ActionContext) -> PageContent:
         return _unavailable("LLDP Neighbour")
     try:
         info = await ctx.core_client.get_network_info()
-        lldp = info.lldp_neighbour_info
-        lines = _flatten_dict(lldp)
-        if not lines:
-            lines = ["No LLDP neighbours"]
+        lines = _parse_info_result(info.lldp_neighbour_info, "No LLDP neighbours")
         return PageContent(title="LLDP Neighbour", lines=lines)
     except Exception as exc:
         return _error("LLDP Neighbour", exc)
@@ -141,10 +138,7 @@ async def show_cdp(ctx: ActionContext) -> PageContent:
         return _unavailable("CDP Neighbour")
     try:
         info = await ctx.core_client.get_network_info()
-        cdp = info.cdp_neighbour_info
-        lines = _flatten_dict(cdp)
-        if not lines:
-            lines = ["No CDP neighbours"]
+        lines = _parse_info_result(info.cdp_neighbour_info, "No CDP neighbours")
         return PageContent(title="CDP Neighbour", lines=lines)
     except Exception as exc:
         return _error("CDP Neighbour", exc)
@@ -156,10 +150,7 @@ async def show_publicip4(ctx: ActionContext) -> PageContent:
         return _unavailable("Public IPv4")
     try:
         info = await ctx.core_client.get_network_info()
-        pub = info.public_ip
-        lines = _flatten_dict(pub)
-        if not lines:
-            lines = ["No public IP data"]
+        lines = _parse_info_result(info.public_ip, "No public IP data")
         return PageContent(title="Public IPv4", lines=lines)
     except Exception as exc:
         return _error("Public IPv4", exc)
@@ -194,6 +185,17 @@ def _error(title: str, exc: Exception) -> PageContent:
     )
 
 
+def _parse_info_result(d: dict, empty_msg: str = "No data") -> list[str]:
+    """Parse a wlanpi-core info dict with {"info": [...]} or {"error": ...} structure."""
+    if "error" in d:
+        return [str(d["error"])]
+    info = d.get("info", [])
+    if isinstance(info, list):
+        lines = [str(item) for item in info if str(item).strip()]
+        return lines if lines else [empty_msg]
+    return [empty_msg]
+
+
 def _flatten_dict(d: dict, prefix: str = "", max_depth: int = 2) -> list[str]:
     """Flatten a nested dict into display lines."""
     lines: list[str] = []
@@ -201,6 +203,12 @@ def _flatten_dict(d: dict, prefix: str = "", max_depth: int = 2) -> list[str]:
         key_str = f"{prefix}{k}" if not prefix else f"{prefix}.{k}"
         if isinstance(v, dict) and max_depth > 0:
             lines.extend(_flatten_dict(v, key_str, max_depth - 1))
+        elif isinstance(v, list):
+            for item in v:
+                if isinstance(item, dict) and max_depth > 0:
+                    lines.extend(_flatten_dict(item, k, max_depth - 1))
+                else:
+                    lines.append(str(item))
         else:
             lines.append(f"{k}: {v}")
     return lines
