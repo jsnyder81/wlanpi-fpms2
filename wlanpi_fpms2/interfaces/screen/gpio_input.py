@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import time
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import httpx
@@ -67,42 +68,16 @@ def _detect_button_map() -> dict[str, int]:
 
 
 # ---------------------------------------------------------------------------
-# Debounce helper
-# ---------------------------------------------------------------------------
-
-_DEBOUNCE_MS = 150  # ignore presses within 150ms of the previous one
-
-
-class _Debouncer:
-    def __init__(self, window_ms: int = _DEBOUNCE_MS) -> None:
-        self._window = window_ms / 1000.0
-        self._last: dict[str, float] = {}
-
-    def accept(self, name: str) -> bool:
-        now = time.monotonic()
-        last = self._last.get(name, 0.0)
-        if now - last < self._window:
-            return False
-        self._last[name] = now
-        return True
-
-
-# ---------------------------------------------------------------------------
 # Async gpiod listener
 # ---------------------------------------------------------------------------
 
 
 async def run_gpio_input_loop(
     state_service_url: str = "http://127.0.0.1:8765",
-    chip: str = "gpiochip0",
+    chip: str = "/dev/gpiochip0",
 ) -> None:
-    """Blocking coroutine that reads GPIO edges and POSTs to /input.
-
-    Must be run in a thread that has a running event loop, or wrapped in
-    asyncio.to_thread so the blocking gpiod call doesn't block the loop.
-    """
+    """Blocking coroutine that reads GPIO edges and POSTs to /input."""
     button_map = _detect_button_map()
-    debouncer  = _Debouncer()
     input_url  = f"{state_service_url}/input"
 
     try:
@@ -115,14 +90,20 @@ async def run_gpio_input_loop(
     pin_to_name = {pin: name for name, pin in button_map.items()}
     pins = list(pin_to_name.keys())
 
-    log.info("GPIO input: monitoring %d buttons on %s", len(pins), chip)
+    log.info("GPIO input: monitoring %d buttons on %s: %s",
+             len(pins), chip, button_map)
 
-    # gpiod 2.x API
+    # Try gpiod 2.x API first, fall back to 1.x
     try:
-        _run_gpiod_v2(chip, pins, pin_to_name, debouncer, input_url)
-    except AttributeError:
-        # Fall back to gpiod 1.x API
-        _run_gpiod_v1(chip, pins, pin_to_name, debouncer, input_url)
+        _run_gpiod_v2(chip, pins, pin_to_name, input_url)
+    except (AttributeError, ImportError):
+        log.info("gpiod v2 API not available, trying v1")
+        try:
+            _run_gpiod_v1(chip, pins, pin_to_name, input_url)
+        except Exception as exc:
+            log.error("GPIO v1 input loop failed: %s", exc)
+    except Exception as exc:
+        log.error("GPIO v2 input loop failed: %s", exc, exc_info=True)
 
 
 def _post_input_sync(url: str, button: str) -> None:
@@ -140,10 +121,9 @@ def _run_gpiod_v2(
     chip: str,
     pins: list[int],
     pin_to_name: dict[int, str],
-    debouncer: _Debouncer,
     input_url: str,
 ) -> None:
-    """gpiod >= 2.0 API."""
+    """gpiod >= 2.0 API — matches original wlanpi-fpms button loop."""
     import gpiod
     from gpiod.line import Direction, Edge, Bias
 
@@ -151,24 +131,28 @@ def _run_gpiod_v2(
         direction=Direction.INPUT,
         edge_detection=Edge.FALLING,
         bias=Bias.PULL_UP,
+        debounce_period=timedelta(microseconds=10),
     )
     request_config = {pin: line_settings for pin in pins}
 
-    with gpiod.request_lines(chip, consumer="wlanpi-fpms2", config=request_config) as req:
-        log.info("GPIO input loop running (gpiod v2)")
+    with gpiod.request_lines(chip, config=request_config,
+                              consumer="wlanpi-fpms2") as req:
+        log.info("GPIO input loop running (gpiod v2) on %s", chip)
         while True:
-            for event in req.read_edge_events():
-                name = pin_to_name.get(event.line_offset)
-                if name and debouncer.accept(name):
-                    log.debug("Button press: %s (pin %d)", name, event.line_offset)
-                    _post_input_sync(input_url, name)
+            # wait_edge_events blocks up to 1 s, then read whatever arrived
+            if req.wait_edge_events(timedelta(seconds=1)):
+                for event in req.read_edge_events():
+                    name = pin_to_name.get(event.line_offset)
+                    if name:
+                        log.debug("Button press: %s (pin %d)",
+                                  name, event.line_offset)
+                        _post_input_sync(input_url, name)
 
 
 def _run_gpiod_v1(
     chip: str,
     pins: list[int],
     pin_to_name: dict[int, str],
-    debouncer: _Debouncer,
     input_url: str,
 ) -> None:
     """gpiod 1.x API (legacy)."""
@@ -182,11 +166,11 @@ def _run_gpiod_v1(
         flags=gpiod.LINE_REQ_FLAG_BIAS_PULL_UP,
     )
 
-    log.info("GPIO input loop running (gpiod v1)")
+    log.info("GPIO input loop running (gpiod v1) on %s", chip)
     while True:
         if lines.event_wait(sec=1):
             for event in lines.event_read_multiple():
                 name = pin_to_name.get(event.source.offset())
-                if name and debouncer.accept(name):
+                if name:
                     log.debug("Button press: %s", name)
                     _post_input_sync(input_url, name)

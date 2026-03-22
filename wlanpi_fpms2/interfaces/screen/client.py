@@ -190,7 +190,10 @@ def _start_gpio_thread(state_url: str) -> None:
     from wlanpi_fpms2.interfaces.screen.gpio_input import run_gpio_input_loop
 
     def _target():
-        asyncio.run(run_gpio_input_loop(state_service_url=state_url))
+        try:
+            asyncio.run(run_gpio_input_loop(state_service_url=state_url))
+        except Exception as exc:
+            log.error("GPIO input thread exited unexpectedly: %s", exc, exc_info=True)
 
     t = threading.Thread(target=_target, name="gpio-input", daemon=True)
     t.start()
