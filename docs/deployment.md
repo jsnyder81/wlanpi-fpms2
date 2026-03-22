@@ -208,8 +208,8 @@ curl -X POST http://127.0.0.1:8765/input \
      -d '{"button":"down"}'
 # → {"status":"ok"}
 
-# Watch live state changes over WebSocket (requires wscat: npm i -g wscat)
-wscat -c ws://127.0.0.1:8765/ws
+# Watch live state changes over WebSocket (requires websocat: apt install websocat)
+websocat ws://127.0.0.1:8765/ws
 ```
 
 ---

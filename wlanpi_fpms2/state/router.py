@@ -196,7 +196,7 @@ async def delete_complication(app_id: str, request: Request) -> None:
 # ---------------------------------------------------------------------------
 
 @router.websocket("/ws")
-async def websocket_endpoint(ws: WebSocket, request: Request) -> None:
+async def websocket_endpoint(ws: WebSocket) -> None:
     broadcaster = _get_broadcaster(ws)
     store = _get_store(ws)
 
