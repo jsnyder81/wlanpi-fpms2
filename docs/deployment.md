@@ -120,7 +120,7 @@ cd wlanpi-fpms2
 ```bash
 sudo python3 -m venv /opt/wlanpi-fpms2
 sudo /opt/wlanpi-fpms2/bin/pip install --upgrade pip
-sudo /opt/wlanpi-fpms2/bin/pip install -e .
+sudo /opt/wlanpi-fpms2/bin/pip install -e ".[screen]"
 ```
 
 The pip upgrade is required because the system pip shipped with Debian is
@@ -230,7 +230,7 @@ changes immediately — no reinstall required.
 If `pyproject.toml` dependencies change (new packages added):
 
 ```bash
-sudo /opt/wlanpi-fpms2/bin/pip install -e .
+sudo /opt/wlanpi-fpms2/bin/pip install -e ".[screen]"
 sudo systemctl restart wlanpi-fpms2 wlanpi-fpms2-screen
 ```
 
