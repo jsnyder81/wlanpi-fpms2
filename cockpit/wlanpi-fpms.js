@@ -248,8 +248,8 @@
         }
 
         var path  = (state.nav && state.nav.path) || [0];
-        // Build parts as [{name, nodeId}]; nodeId=null for "Main Menu"
-        var parts = [{ name: "Main Menu", nodeId: null }];
+        // Build parts as [{name, nodeId}]; nodeId=null for virtual roots
+        var parts = [{ name: "Home", nodeId: null }, { name: "Main Menu", nodeId: null }];
         var ids   = topLevelNodeIds();
 
         for (var depth = 0; depth < path.length - 1; depth++) {
