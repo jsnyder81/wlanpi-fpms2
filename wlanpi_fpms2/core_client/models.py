@@ -167,6 +167,12 @@ class ProfilerPurge(BaseModel):
     message: str = ""
 
 
+class ProfilerStatus(BaseModel):
+    running: bool = False
+    ssid: str | None = None
+    passphrase: str | None = None
+
+
 # ---------------------------------------------------------------------------
 # Network
 # ---------------------------------------------------------------------------

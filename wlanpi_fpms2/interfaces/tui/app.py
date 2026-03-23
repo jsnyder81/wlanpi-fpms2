@@ -249,6 +249,9 @@ class PagePanel(Widget):
         self.query_one("#page-title", Static).update(title)
 
         content = list(page.lines)
+        if page.raw_image_b64:
+            content.append("")
+            content.append("[dim]QR code available on OLED display and Cockpit[/dim]")
         if page.alert:
             color = {"error": "red", "warning": "yellow", "info": "cyan"}.get(
                 page.alert.level, "white"

@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import base64
+import io
 import logging
+
+import qrcode
 
 from wlanpi_fpms2.actions.base import ActionContext
 from wlanpi_fpms2.state.models import AlertContent, PageContent
@@ -12,16 +16,33 @@ log = logging.getLogger(__name__)
 _PROFILER_SERVICE = "wlanpi-profiler"
 
 
+def _make_wifi_qr_b64(ssid: str, passphrase: str) -> str:
+    """Return a base64-encoded PNG QR code for WIFI:S:{ssid};T:WPA;P:{passphrase};;"""
+    data = f"WIFI:S:{ssid};T:WPA;P:{passphrase};;"
+    img = qrcode.make(data)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode()
+
+
 async def profiler_status(ctx: ActionContext) -> PageContent:
-    """Show profiler service status."""
+    """Show profiler service status, with QR code when running."""
     if ctx.core_client is None:
         return _unavailable("Profiler Status")
     try:
-        svc = await ctx.core_client.get_service_status(_PROFILER_SERVICE)
-        state = "Running" if svc.active else "Stopped"
+        status = await ctx.core_client.get_profiler_status()
+        state_str = "Running" if status.running else "Stopped"
+        lines = [f"Profiler: {state_str}"]
+        raw_image_b64 = None
+        if status.running and status.ssid:
+            lines += [f"SSID: {status.ssid}", f"Pass: {status.passphrase or ''}"]
+            raw_image_b64 = _make_wifi_qr_b64(
+                status.ssid, status.passphrase or ""
+            )
         return PageContent(
             title="Profiler Status",
-            lines=[f"Profiler: {state}"],
+            lines=lines,
+            raw_image_b64=raw_image_b64,
         )
     except Exception as exc:
         return _error("Profiler Status", exc)

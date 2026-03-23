@@ -28,6 +28,7 @@ from wlanpi_fpms2.core_client.models import (
     ModeSwitch,
     NetworkInfo,
     ProfilerPurge,
+    ProfilerStatus,
     PublicIpInfo,
     ReachabilityTest,
     RegDomainInfo,
@@ -295,8 +296,12 @@ class CoreApiClient:
         return ScanResults.model_validate(data)
 
     # ------------------------------------------------------------------
-    # Profiler purge
+    # Profiler
     # ------------------------------------------------------------------
+
+    async def get_profiler_status(self) -> ProfilerStatus:
+        data = await self._get("/profiler/status")
+        return ProfilerStatus.model_validate(data)
 
     async def profiler_purge_reports(self) -> ProfilerPurge:
         data = await self._post("/profiler/purge/reports")
