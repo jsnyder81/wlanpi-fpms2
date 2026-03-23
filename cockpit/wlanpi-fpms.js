@@ -405,6 +405,17 @@
             : "<span class='fpms-dim'>○ Stopped</span>");
         setHtml("info-reachable", reachableHtml(hp.reachable));
         setText("info-time",      hp.time_str || "—");
+
+        // Client count (hotspot mode only)
+        var clientsRow = el("info-clients-row");
+        if (clientsRow) {
+            if (hp.mode === "hotspot" && hp.client_count != null) {
+                clientsRow.style.display = "";
+                setText("info-clients", String(hp.client_count));
+            } else {
+                clientsRow.style.display = "none";
+            }
+        }
     }
 
     // -----------------------------------------------------------------------

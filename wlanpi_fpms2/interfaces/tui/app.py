@@ -86,6 +86,8 @@ class StatusBar(Widget):
                 left_parts.append("Profiler")
             if hp.wlan_interfaces:
                 left_parts.append(f"WiFi×{len(hp.wlan_interfaces)}")
+            if hp.mode == "hotspot" and hp.client_count is not None:
+                left_parts.append(f"Clients:{hp.client_count}")
             if hp.battery and hp.battery.present:
                 batt = hp.battery
                 charge = f"{batt.level_pct}%" if batt.level_pct is not None else "?"

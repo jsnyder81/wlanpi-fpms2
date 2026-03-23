@@ -309,6 +309,13 @@ def _draw_status_bar(draw: ImageDraw.ImageDraw, state: "FpmsState", y: int = 0) 
     time_str = hp.time_str if hp else "--:--"
     draw.text((2 + 2, y + 2), time_str, font=FONTB11, fill=T["status_bar_foreground"])
 
+    # Client count (hotspot mode) — shown next to time
+    if hp and hp.mode == "hotspot" and hp.client_count is not None:
+        client_str = f"C:{hp.client_count}"
+        tw = FONTB11.getbbox(time_str)[2]
+        draw.text((tw + 8, y + 2), client_str, font=TINY_FONT,
+                  fill=T["text_highlighted_color"])
+
     x = PAGE_WIDTH - 4
     fg = T["status_bar_foreground"]
 
