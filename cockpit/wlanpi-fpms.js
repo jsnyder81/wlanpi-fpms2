@@ -229,6 +229,15 @@
         el("page-title").textContent   = titleText;
         el("page-content").textContent = (page.lines || []).join("\n");
 
+        var qrEl = el("page-qr");
+        if (page.raw_image_b64) {
+            qrEl.src = "data:image/png;base64," + page.raw_image_b64;
+            qrEl.style.display = "";
+        } else {
+            qrEl.src = "";
+            qrEl.style.display = "none";
+        }
+
         var alertEl = el("page-alert");
         if (page.alert) {
             var cls = { error: "fpms-alert-error", warning: "fpms-alert-warning", info: "fpms-alert-info" }[page.alert.level] || "";

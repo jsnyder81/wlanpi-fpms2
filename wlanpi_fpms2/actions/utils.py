@@ -95,16 +95,42 @@ async def port_blinker_stop(ctx: ActionContext) -> PageContent:
 
 async def show_ssid_passphrase(ctx: ActionContext) -> PageContent:
     """Show hotspot SSID and passphrase from hostapd.conf."""
+    import httpx
     if ctx.core_client is None:
         return _unavailable("SSID/Passphrase")
     try:
         result = await ctx.core_client.get_ssid_passphrase()
+        raw_image_b64 = _make_wifi_qr(result.ssid, result.passphrase)
         return PageContent(
             title="SSID/Passphrase",
             lines=[f"SSID: {result.ssid}", f"Pass: {result.passphrase}"],
+            raw_image_b64=raw_image_b64,
         )
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
+            return PageContent(
+                title="SSID/Passphrase",
+                lines=["Hotspot not active.", "Enable hotspot mode", "to see credentials."],
+            )
+        return _error("SSID/Passphrase", exc)
     except Exception as exc:
         return _error("SSID/Passphrase", exc)
+
+
+def _make_wifi_qr(ssid: str, passphrase: str) -> str | None:
+    """Generate a WIFI: QR code and return base64-encoded PNG, or None on failure."""
+    try:
+        import base64
+        import io
+        import qrcode
+        qr_spec = f"WIFI:S:{ssid};T:WPA;P:{passphrase};;"
+        img = qrcode.make(qr_spec)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return base64.b64encode(buf.getvalue()).decode()
+    except Exception as exc:
+        log.warning("QR generation failed: %s", exc)
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +179,7 @@ test_ruckus  = _make_cloud_test("RUCKUS Cloud")
 
 def _make_mode_switcher(target_mode: str):
     async def _action(ctx: ActionContext) -> PageContent:
+        import httpx
         if ctx.core_client is None:
             return _unavailable(f"Switch to {target_mode.title()}")
         try:
@@ -162,6 +189,12 @@ def _make_mode_switcher(target_mode: str):
                 lines=[result.status, "Rebooting..."],
                 alert=AlertContent(level="info", message=result.status),
             )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 503:
+                return PageContent(
+                    title=f"Switch to {target_mode.title()}",
+                    lines=[f"{target_mode.title()} mode", "not installed."],
+                )
         except Exception as exc:
             return _error(f"Switch to {target_mode.title()}", exc)
     _action.__name__ = f"switch_to_{target_mode}"

@@ -282,6 +282,18 @@
     background: var(--pf-global--primary-color--200, #004c99);
 }
 
+/* ── QR code image ──────────────────────────────────────── */
+
+.fpms-qr-image {
+    display: block;
+    max-width: 220px;
+    max-height: 220px;
+    margin: 10px auto 12px;
+    border: 1px solid var(--pf-global--BorderColor--100, #d2d2d2);
+    border-radius: 4px;
+    image-rendering: pixelated;
+}
+
 /* ── Page title ─────────────────────────────────────────── */
 
 .fpms-page-title {

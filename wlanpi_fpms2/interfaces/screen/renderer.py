@@ -116,6 +116,8 @@ def render(state: "FpmsState", tree: "MenuTree") -> Image.Image:
         if state.current_page is not None:
             if state.current_page.alert is not None:
                 _render_alert(draw, state.current_page)
+            elif state.current_page.raw_image_b64:
+                _render_qr_page(image, draw, state.current_page)
             else:
                 _render_simple_table(draw, state.current_page, state.scroll_index)
         if state.loading:
@@ -399,6 +401,58 @@ def _render_simple_table(
         draw.text((0, font_offset), line,
                   font=SMART_FONT, fill=T["simple_table_row_foreground"])
         font_offset += font_size + 2
+
+
+# ---------------------------------------------------------------------------
+# QR code page
+# ---------------------------------------------------------------------------
+
+
+def _render_qr_page(image: Image.Image, draw: ImageDraw.ImageDraw, page) -> None:
+    """Render a page that contains a base64-encoded QR PNG.
+
+    Title bar at top, QR code centred below, text lines squeezed below that.
+    """
+    import base64
+    import io
+
+    title = page.title or ""
+    if len(title) > 17:
+        title = title[:15] + ".."
+
+    # Title bar
+    draw.rectangle((0, 0, PAGE_WIDTH, STATUS_BAR_HEIGHT), fill=T["simple_table_title_background"])
+    tw = SMART_FONT.getbbox(title)[2]
+    draw.text(((PAGE_WIDTH - tw) / 2, 2), title,
+              font=SMART_FONT, fill=T["simple_table_title_foreground"])
+    hy = STATUS_BAR_HEIGHT / 2
+    draw.line([(4, hy), (8, 4)],                fill=T["simple_table_title_foreground"], width=1)
+    draw.line([(4, hy), (8, STATUS_BAR_HEIGHT - 4)], fill=T["simple_table_title_foreground"], width=1)
+
+    y = STATUS_BAR_HEIGHT + 2
+
+    # Decode and scale the QR image to fit the available width
+    try:
+        raw = base64.b64decode(page.raw_image_b64)
+        qr_img = Image.open(io.BytesIO(raw)).convert("RGB")
+        # Leave room for text lines below
+        text_lines = page.lines or []
+        text_height = len(text_lines) * 11 if text_lines else 0
+        available = PAGE_HEIGHT - y - text_height - 4
+        qr_size = min(available, PAGE_WIDTH - 4)
+        qr_img = qr_img.resize((qr_size, qr_size), Image.NEAREST)
+        x_off = (PAGE_WIDTH - qr_size) // 2
+        image.paste(qr_img, (x_off, y))
+        y += qr_size + 2
+    except Exception:
+        pass  # if decode fails, just show text below the title
+
+    # Text lines below QR
+    for line in (page.lines or []):
+        if y >= PAGE_HEIGHT - 2:
+            break
+        draw.text((2, y), line, font=TINY_FONT, fill=T["simple_table_row_foreground"])
+        y += 10
 
 
 # ---------------------------------------------------------------------------
