@@ -38,8 +38,13 @@ async def expire_complications_loop(store: "FpmsStateStore") -> None:
 async def homepage_refresh_loop(
     store: "FpmsStateStore",
     core_client: "CoreApiClient | None",
+    app: object | None = None,
 ) -> None:
-    """Periodically refresh homepage data from wlanpi-core."""
+    """Periodically refresh homepage data from wlanpi-core.
+
+    When the device mode changes (e.g. classic → hotspot), the server-side
+    menu tree is rebuilt so navigation indices stay correct.
+    """
     _last_reachability_at: float = 0.0
     _last_reachability: bool | None = None
 
@@ -62,6 +67,20 @@ async def homepage_refresh_loop(
             except Exception:
                 mode = "classic"
                 hostname = ""
+
+            # Rebuild the server-side menu tree if mode has changed.
+            # This fixes index mismatches between the server tree (built at
+            # startup from /etc/wlanpi-state) and the actual device mode.
+            if app is not None:
+                current_tree = getattr(app.state, "menu_tree", None)
+                if current_tree is not None and current_tree.mode != mode:
+                    from wlanpi_fpms2.state.menu_tree import build_menu_tree
+                    timezones = getattr(app.state, "timezones", [])
+                    app.state.menu_tree = build_menu_tree(mode=mode, timezones=timezones)
+                    log.info(
+                        "Menu tree rebuilt: mode changed %s → %s",
+                        current_tree.mode, mode,
+                    )
 
             # Device stats (IP address)
             try:

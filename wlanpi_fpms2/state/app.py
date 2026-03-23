@@ -97,6 +97,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.store = store
     app.state.broadcaster = broadcaster
     app.state.menu_tree = menu_tree
+    app.state.timezones = timezones
     app.state.action_registry = action_registry
     app.state.core_client = core_client
 
@@ -104,7 +105,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     tasks = [
         asyncio.create_task(broadcaster.ping_loop()),
         asyncio.create_task(expire_complications_loop(store)),
-        asyncio.create_task(homepage_refresh_loop(store, core_client)),
+        asyncio.create_task(homepage_refresh_loop(store, core_client, app)),
     ]
 
     log.info("fpms2 state service started (mode=%s, core_client=%s)",
