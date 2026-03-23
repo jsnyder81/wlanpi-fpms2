@@ -150,20 +150,24 @@ async def homepage_refresh_loop(
                     pass
 
             # Network interfaces (secondary IPs, eth0 carrier, wlan detection)
+            # IPInterface fields: ifname, operstate, ipv4_addresses()
             secondary_ips: list[dict] = []
             eth_carrier = False
             try:
                 ifaces = await core_client.get_interfaces()
                 for group in ifaces.values():
                     for iface in group:
-                        if iface.name == "eth0":
-                            eth_carrier = iface.state == "UP"
-                        elif iface.name in ("eth1", "usb0", "usb1", "pan0") and iface.ipv4:
-                            secondary_ips.append(
-                                {"name": iface.name, "ip": iface.ipv4}
-                            )
-                        if iface.name.startswith("wlan"):
-                            wlan_interfaces.append(WlanIfaceModel(name=iface.name))
+                        if iface.ifname == "eth0":
+                            eth_carrier = iface.operstate == "UP"
+                        elif iface.ifname in ("eth1", "usb0", "usb1", "pan0"):
+                            addrs = iface.ipv4_addresses()
+                            if addrs:
+                                ip = addrs[0].split("/")[0]
+                                secondary_ips.append(
+                                    {"name": iface.ifname, "ip": ip}
+                                )
+                        if iface.ifname.startswith("wlan"):
+                            wlan_interfaces.append(WlanIfaceModel(name=iface.ifname))
             except Exception:
                 pass
 
