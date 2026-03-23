@@ -135,9 +135,9 @@ async def homepage_refresh_loop(
                 bat = await core_client.get_battery()
                 battery = BatteryData(
                     present=bat.present,
-                    charging=bat.charging,
-                    level_pct=bat.level_pct,
-                    voltage_mv=bat.voltage_mv,
+                    charging=bat.status.lower() == "charging" if bat.status else False,
+                    level_pct=bat.charge_pct,
+                    voltage_mv=int(bat.voltage_v * 1000) if bat.voltage_v else None,
                 )
             except Exception:
                 pass
@@ -209,7 +209,7 @@ async def homepage_refresh_loop(
             )
 
             # Wake screen if eth0 carrier changed
-            prev_homepage = store.state.homepage
+            prev_homepage = store.snapshot().homepage
             if prev_homepage.eth_carrier != eth_carrier:
                 await store.wake_screen()
 
