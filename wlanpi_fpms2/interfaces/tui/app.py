@@ -84,6 +84,15 @@ class StatusBar(Widget):
                 left_parts.append("BT")
             if hp.profiler_active:
                 left_parts.append("Profiler")
+            if hp.wlan_interfaces:
+                left_parts.append(f"WiFi×{len(hp.wlan_interfaces)}")
+            if hp.battery and hp.battery.present:
+                batt = hp.battery
+                charge = f"{batt.level_pct}%" if batt.level_pct is not None else "?"
+                icon = "⚡" if batt.charging else "🔋"
+                right_parts.append(f"{icon}{charge}")
+            if hp.cpu_temp is not None and hp.cpu_temp >= 70:
+                right_parts.append(f"🌡{hp.cpu_temp:.0f}°C")
             if hp.time_str:
                 right_parts.append(hp.time_str)
 
@@ -119,18 +128,58 @@ class HomepagePanel(Widget):
             else "[dim]Unknown[/dim]"
         )
 
+        # Battery
+        if hp.battery and hp.battery.present:
+            charge = f"{hp.battery.level_pct}%" if hp.battery.level_pct is not None else "?"
+            batt_status = "Charging" if hp.battery.charging else charge
+            batt_str = f"[green]{batt_status}[/green]" if hp.battery.charging else charge
+        else:
+            batt_str = "[dim]N/A[/dim]"
+
+        # Temperature
+        if hp.cpu_temp is not None:
+            if hp.cpu_temp >= 80:
+                temp_str = f"[red]{hp.cpu_temp:.0f}°C[/red]"
+            elif hp.cpu_temp >= 70:
+                temp_str = f"[yellow]{hp.cpu_temp:.0f}°C[/yellow]"
+            else:
+                temp_str = f"{hp.cpu_temp:.0f}°C"
+        else:
+            temp_str = "[dim]N/A[/dim]"
+
+        # WiFi adapters
+        if hp.wlan_interfaces:
+            wifi_names = ", ".join(w.name for w in hp.wlan_interfaces)
+            wifi_str = f"[green]{wifi_names}[/green]"
+        else:
+            wifi_str = "[red]None[/red]"
+
         lines = [
             "[bold]WLANPi FPMS2[/bold]",
             "",
             f"  Hostname:   {hp.hostname}",
             f"  IP:         {hp.primary_ip or 'N/A'}",
             f"  Mode:       {hp.mode.title()}",
+            f"  WiFi:       {wifi_str}",
             f"  Bluetooth:  {'[green]On[/green]' if hp.bluetooth_on else '[dim]Off[/dim]'}",
+            f"  Battery:    {batt_str}",
+            f"  Temp:       {temp_str}",
             f"  Profiler:   {'[green]Active[/green]' if hp.profiler_active else '[dim]Stopped[/dim]'}",
             f"  Reachable:  {reachable_str}",
-            "",
-            "[dim]Press → or Enter to open menu[/dim]",
         ]
+
+        # Secondary IPs
+        if hp.secondary_ips:
+            lines.append("")
+            for sec in hp.secondary_ips:
+                lines.append(f"  {sec['name']:10s} {sec['ip']}")
+
+        # Client count (hotspot mode)
+        if hp.client_count is not None:
+            lines.append(f"  Clients:    {hp.client_count}")
+
+        lines.append("")
+        lines.append("[dim]Press → or Enter to open menu[/dim]")
 
         for alert in hp.alerts:
             lines.append(f"[red]! {alert}[/red]")

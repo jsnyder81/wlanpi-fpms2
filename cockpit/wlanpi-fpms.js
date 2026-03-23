@@ -165,14 +165,46 @@
 
     function renderHome(state) {
         var hp = state.homepage || {};
+        var wlan = hp.wlan_interfaces || [];
+        var wifiStr = wlan.length
+            ? wlan.map(function (w) { return w.name; }).join(", ")
+            : "None";
+
         var lines = [
             "  Hostname:  " + (hp.hostname || "—"),
             "  IP:        " + (hp.primary_ip || "—"),
             "  Mode:      " + titleCase(hp.mode || "classic"),
+            "  WiFi:      " + wifiStr,
             "  Bluetooth: " + (hp.bluetooth_on ? "On" : "Off"),
             "  Profiler:  " + (hp.profiler_active ? "Active" : "Stopped"),
             "  Reachable: " + reachableStr(hp.reachable),
         ];
+
+        // Battery
+        if (hp.battery && hp.battery.present) {
+            var charge = (hp.battery.level_pct != null) ? hp.battery.level_pct + "%" : "?";
+            lines.push("  Battery:   " + (hp.battery.charging ? "Charging " + charge : charge));
+        }
+
+        // Temperature
+        if (hp.cpu_temp != null) {
+            lines.push("  Temp:      " + Math.round(hp.cpu_temp) + "°C");
+        }
+
+        // Secondary IPs
+        var secIps = hp.secondary_ips || [];
+        if (secIps.length) {
+            lines.push("");
+            secIps.forEach(function (s) {
+                lines.push("  " + s.name + ":     " + s.ip);
+            });
+        }
+
+        // Client count (hotspot mode)
+        if (hp.client_count != null) {
+            lines.push("  Clients:   " + hp.client_count);
+        }
+
         if (hp.alerts && hp.alerts.length) {
             lines.push("");
             hp.alerts.forEach(function (a) { lines.push("  ! " + a); });
@@ -329,9 +361,45 @@
         setText("info-hostname",  hp.hostname   || "—");
         setText("info-ip",        hp.primary_ip || "—");
         setText("info-mode",      titleCase(hp.mode || "classic"));
-        setHtml("info-bt",        hp.bluetooth_on
+
+        // WiFi adapters
+        var wlan = hp.wlan_interfaces || [];
+        if (wlan.length) {
+            var names = wlan.map(function (w) { return w.name; }).join(", ");
+            setHtml("info-wifi", "<span class='fpms-ok'>● " + esc(names) + "</span>");
+        } else {
+            setHtml("info-wifi", "<span class='fpms-err'>● None</span>");
+        }
+
+        setHtml("info-bt", hp.bluetooth_on
             ? "<span class='fpms-ok'>● On</span>"
             : "<span class='fpms-dim'>○ Off</span>");
+
+        // Battery
+        var bat = hp.battery;
+        if (bat && bat.present) {
+            var charge = (bat.level_pct != null) ? bat.level_pct + "%" : "?";
+            var batCls = bat.charging ? "fpms-ok" : (bat.level_pct != null && bat.level_pct <= 25 ? "fpms-warn" : "");
+            var batLabel = bat.charging ? "⚡ " + charge : charge;
+            setHtml("info-battery", batCls
+                ? "<span class='" + batCls + "'>" + esc(batLabel) + "</span>"
+                : esc(batLabel));
+        } else {
+            setHtml("info-battery", "<span class='fpms-dim'>N/A</span>");
+        }
+
+        // Temperature
+        var temp = hp.cpu_temp;
+        if (temp != null) {
+            var tempCls = temp >= 80 ? "fpms-err" : temp >= 70 ? "fpms-warn" : "";
+            var tempStr = Math.round(temp) + "°C";
+            setHtml("info-temp", tempCls
+                ? "<span class='" + tempCls + "'>" + esc(tempStr) + "</span>"
+                : esc(tempStr));
+        } else {
+            setHtml("info-temp", "<span class='fpms-dim'>N/A</span>");
+        }
+
         setHtml("info-profiler",  hp.profiler_active
             ? "<span class='fpms-ok'>● Active</span>"
             : "<span class='fpms-dim'>○ Stopped</span>");
