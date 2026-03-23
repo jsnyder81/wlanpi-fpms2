@@ -86,7 +86,20 @@ async def get_state(request: Request) -> FpmsState:
 @router.get("/menu", response_model=list[MenuNode])
 async def get_menu(request: Request) -> list[MenuNode]:
     tree = _get_tree(request)
-    return list(tree.index.values())
+    # Return only nodes reachable from tree.roots — this excludes orphaned
+    # nodes such as apps.kismet/profiler/scanner in non-classic modes, which
+    # exist in the index but are not referenced from any root path.
+    visited: list[str] = []
+    queue = list(tree.roots)
+    seen: set[str] = set()
+    while queue:
+        nid = queue.pop(0)
+        if nid in seen or nid not in tree.index:
+            continue
+        seen.add(nid)
+        visited.append(nid)
+        queue.extend(tree.index[nid].children)
+    return [tree.index[nid] for nid in visited]
 
 
 # ---------------------------------------------------------------------------
