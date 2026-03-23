@@ -99,14 +99,10 @@ async def homepage_refresh_loop(
             except Exception:
                 primary_ip = ""
 
-            # WLAN interfaces
-            try:
-                wlan_resp = await core_client.get_wlan_interfaces()
-                wlan_interfaces = [
-                    WlanIfaceModel(name=w.interface) for w in wlan_resp.interfaces
-                ]
-            except Exception:
-                wlan_interfaces = []
+            # WLAN interfaces — detected from get_interfaces() rather than
+            # get_wlan_interfaces() because the latter depends on wpa_supplicant
+            # which isn't running in hotspot/server/bridge modes.
+            wlan_interfaces: list[WlanIfaceModel] = []
 
             # Bluetooth power state
             try:
@@ -153,7 +149,7 @@ async def homepage_refresh_loop(
                 except Exception:
                     pass
 
-            # Network interfaces (secondary IPs + eth0 carrier)
+            # Network interfaces (secondary IPs, eth0 carrier, wlan detection)
             secondary_ips: list[dict] = []
             eth_carrier = False
             try:
@@ -166,6 +162,8 @@ async def homepage_refresh_loop(
                             secondary_ips.append(
                                 {"name": iface.name, "ip": iface.ipv4}
                             )
+                        if iface.name.startswith("wlan"):
+                            wlan_interfaces.append(WlanIfaceModel(name=iface.name))
             except Exception:
                 pass
 
