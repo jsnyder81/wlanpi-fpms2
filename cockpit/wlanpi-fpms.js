@@ -33,6 +33,9 @@
     /** @type {Object.<string, Object>}  node id → MenuNode */
     var menuIndex = {};
 
+    /** Current device mode — updated on every state poll. */
+    var currentMode = "classic";
+
     function fetchMenu() {
         http.get("/menu")
             .done(function (data) {
@@ -119,6 +122,7 @@
     // -----------------------------------------------------------------------
 
     function renderState(state) {
+        currentMode = (state.homepage && state.homepage.mode) || "classic";
         renderDeviceCard(state);
         renderComplications(state);
 
@@ -374,6 +378,16 @@
     // Menu tree helpers
     // -----------------------------------------------------------------------
 
+    /** Return true if a node should be visible in the current mode. */
+    function nodeVisible(node) {
+        if (!node) return false;
+        var hidden = node.hidden_in_mode || [];
+        if (hidden.indexOf(currentMode) !== -1) return false;
+        var visible = node.visible_in_mode || [];
+        if (visible.length > 0 && visible.indexOf(currentMode) === -1) return false;
+        return true;
+    }
+
     function siblingsOfPath(path) {
         if (path.length <= 1) return topLevelNodeIds();
         var ids    = topLevelNodeIds();
@@ -381,7 +395,9 @@
         for (var d = 0; d < path.length - 1; d++) {
             parent = menuIndex[ids[path[d]]];
             if (!parent || !parent.children) return ids;
-            ids = parent.children;
+            ids = parent.children.filter(function (id) {
+                return nodeVisible(menuIndex[id]);
+            });
         }
         return ids;
     }
@@ -391,7 +407,9 @@
         Object.keys(menuIndex).forEach(function (id) {
             (menuIndex[id].children || []).forEach(function (c) { childSet[c] = true; });
         });
-        return Object.keys(menuIndex).filter(function (id) { return !childSet[id]; });
+        return Object.keys(menuIndex).filter(function (id) {
+            return !childSet[id] && nodeVisible(menuIndex[id]);
+        });
     }
 
     // -----------------------------------------------------------------------
