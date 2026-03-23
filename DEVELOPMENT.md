@@ -174,8 +174,8 @@ cd ~/source/wlanpi-fpms2
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip wheel setuptools
-pip install .            # installs all core dependencies incl. qrcode, Pillow, textual
-pip install .[screen]    # adds SPI/GPIO extras for the OLED client
+pip install -e .            # editable install — source changes take effect on service restart
+pip install -e .[screen]    # adds SPI/GPIO extras for the OLED client
 deactivate
 ```
 
@@ -361,10 +361,12 @@ sudo journalctl -f -u wlanpi-core-dev
 
 ## Part 5 — Updating after code changes
 
-After editing on your Mac and rsyncing:
+### Python source changes
+
+Because the package is installed in editable mode (`pip install -e .`), Python imports directly from the source tree. After rsyncing, a service restart is all that's needed — no reinstall:
 
 ```bash
-# Re-sync fpms2
+# Re-sync fpms2 from Mac
 rsync -av --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
     ~/source/wlanpi-fpms2/ wlanpi@wlanpi-XXX.local:~/source/wlanpi-fpms2/
 
@@ -373,16 +375,38 @@ sudo systemctl restart wlanpi-fpms2
 # Screen client auto-restarts because it requires wlanpi-fpms2
 ```
 
-If `pyproject.toml` changed (new dependency):
+If `pyproject.toml` changed (new dependency), reinstall first:
 
 ```bash
 cd ~/source/wlanpi-fpms2
 source .venv/bin/activate
-pip install .
-pip install .[screen]
+pip install -e .
+pip install -e .[screen]
 deactivate
 sudo systemctl restart wlanpi-fpms2 wlanpi-fpms2-screen
 ```
+
+### Cockpit plugin changes (JS/CSS/HTML)
+
+The Cockpit plugin is served directly from the symlinked source directory, so no copy or restart is needed. However, **Cockpit and the browser both cache JS aggressively**. After changing any file in `cockpit/`:
+
+1. Restart Cockpit to flush its server-side cache:
+   ```bash
+   sudo systemctl restart cockpit
+   ```
+
+2. Hard-refresh the browser: `Cmd+Shift+R` (Mac) or `Ctrl+Shift+R` (Linux/Windows)
+
+   If that doesn't work, open an **incognito/private** window to force a clean load.
+
+3. Verify the new JS is loaded by running this in the browser console (`F12` → Console):
+   ```javascript
+   // Should print the count of a function or string unique to your change
+   fetch('/cockpit/wlanpi-fpms2/wlanpi-fpms.js')
+       .then(r => r.text())
+       .then(t => console.log('nodeVisible count:', (t.match(/nodeVisible/g)||[]).length))
+   ```
+   Expected output: `nodeVisible count: 3`
 
 ---
 
