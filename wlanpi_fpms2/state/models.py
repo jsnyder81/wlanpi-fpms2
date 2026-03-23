@@ -88,8 +88,15 @@ class HomepageData(BaseModel):
     profiler_active: bool = False
     bluetooth_on: bool = False
     battery: BatteryData | None = None
+    cpu_temp: float | None = None
     time_str: str = ""  # "HH:MM"
     alerts: list[str] = Field(default_factory=list)
+    client_count: int | None = None  # hotspot connected clients
+    # QR credentials for home page alternate display
+    profiler_ssid: str | None = None
+    profiler_passphrase: str | None = None
+    hotspot_ssid: str | None = None
+    hotspot_passphrase: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -133,12 +140,14 @@ class FpmsState(BaseModel):
     homepage: HomepageData = Field(default_factory=HomepageData)
     loading: bool = False
     shutdown_in_progress: bool = False
+    shutdown_type: Literal["reboot", "shutdown"] | None = None
     screen_sleeping: bool = False
     display_orientation: Literal["normal", "flipped"] = "normal"
     scroll_index: int = 0
     scroll_max: int = 0
     complications: list[Complication] = Field(default_factory=list)
     last_input_at: float = Field(default_factory=time.time)
+    home_page_alternate: bool = False
 
 
 # ---------------------------------------------------------------------------

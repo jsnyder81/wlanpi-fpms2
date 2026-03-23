@@ -12,9 +12,13 @@ from fastapi import FastAPI
 from wlanpi_fpms2.state.broadcaster import Broadcaster
 from wlanpi_fpms2.state.menu_tree import MenuTree, build_menu_tree
 from wlanpi_fpms2.state.models import FpmsState
-from wlanpi_fpms2.state.periodic import expire_complications_loop, homepage_refresh_loop
+from wlanpi_fpms2.state.periodic import (
+    expire_complications_loop,
+    homepage_refresh_loop,
+    profiler_notification_loop,
+)
 from wlanpi_fpms2.state.router import router
-from wlanpi_fpms2.state.store import FpmsStateStore
+from wlanpi_fpms2.state.store import FpmsStateStore, load_saved_orientation
 
 log = logging.getLogger(__name__)
 
@@ -78,6 +82,10 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan: startup and shutdown."""
     # --- Startup ---
     store = FpmsStateStore()
+    # Restore persisted display orientation
+    saved_orientation = load_saved_orientation()
+    if saved_orientation in ("normal", "flipped"):
+        store._state.display_orientation = saved_orientation  # type: ignore[assignment]
     broadcaster = Broadcaster()
     mode = _read_device_mode()
     timezones = _read_timezones()
@@ -106,6 +114,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         asyncio.create_task(broadcaster.ping_loop()),
         asyncio.create_task(expire_complications_loop(store)),
         asyncio.create_task(homepage_refresh_loop(store, core_client, app)),
+        asyncio.create_task(profiler_notification_loop(store)),
     ]
 
     log.info("fpms2 state service started (mode=%s, core_client=%s)",

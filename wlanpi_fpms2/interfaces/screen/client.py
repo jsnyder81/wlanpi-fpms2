@@ -130,6 +130,39 @@ def _fetch_menu_tree(base_url: str) -> MenuTree:
 
 
 # ---------------------------------------------------------------------------
+# Boot splash & shutdown images
+# ---------------------------------------------------------------------------
+
+_IMAGES_DIR = os.path.join(os.path.dirname(__file__), "images", "128x128")
+
+
+def _show_splash(screen) -> None:
+    """Display a 5-frame splash animation at startup."""
+    from PIL import Image
+    for i in range(5):
+        path = os.path.join(_IMAGES_DIR, f"wlanpi{i}.png")
+        try:
+            img = Image.open(path).convert("RGB")
+            screen.drawImage(img)
+            time.sleep(0.1)
+        except Exception:
+            pass
+    time.sleep(2.0)
+
+
+def _show_shutdown_image(screen, shutdown_type: str) -> None:
+    """Display the reboot or shutdown image."""
+    from PIL import Image
+    filename = "reboot.png" if shutdown_type == "reboot" else "shutdown.png"
+    path = os.path.join(_IMAGES_DIR, filename)
+    try:
+        img = Image.open(path).convert("RGB")
+        screen.drawImage(img)
+    except Exception:
+        log.warning("Could not load shutdown image: %s", path)
+
+
+# ---------------------------------------------------------------------------
 # Main WebSocket loop
 # ---------------------------------------------------------------------------
 
@@ -159,6 +192,13 @@ async def _ws_loop(screen, state_url: str) -> None:
                             payload = data
 
                         state = FpmsState.model_validate(payload)
+
+                        # Shutdown/reboot image takes precedence
+                        if state.shutdown_in_progress:
+                            _show_shutdown_image(
+                                screen, state.shutdown_type or "reboot"
+                            )
+                            continue
 
                         # Rebuild tree if mode changed
                         current_mode = (state.homepage.mode
@@ -229,6 +269,9 @@ def main() -> None:
                 sys.exit(1)
 
     screen = _create_screen()
+
+    # Boot splash animation
+    _show_splash(screen)
 
     # Start GPIO input in background thread
     _start_gpio_thread(state_url)

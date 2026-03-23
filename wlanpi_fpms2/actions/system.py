@@ -136,7 +136,7 @@ def _make_set_reg_domain(code: str):
             return _unavailable(f"Set Domain {code.upper()}")
         try:
             await ctx.core_client.set_reg_domain(code.upper())
-            await ctx.store.set_shutdown(True)
+            await ctx.store.set_shutdown(True, shutdown_type="reboot")
             return PageContent(
                 title=f"Domain: {code.upper()}",
                 lines=[
@@ -208,7 +208,7 @@ async def reboot(ctx: ActionContext) -> PageContent:
         return _unavailable("Reboot")
     try:
         await ctx.core_client.reboot()
-        await ctx.store.set_shutdown(True)
+        await ctx.store.set_shutdown(True, shutdown_type="reboot")
         return PageContent(
             title="Rebooting...",
             lines=["Device will reboot", "in a few seconds."],
@@ -224,7 +224,7 @@ async def shutdown(ctx: ActionContext) -> PageContent:
         return _unavailable("Shutdown")
     try:
         await ctx.core_client.shutdown()
-        await ctx.store.set_shutdown(True)
+        await ctx.store.set_shutdown(True, shutdown_type="shutdown")
         return PageContent(
             title="Shutting Down...",
             lines=["Device will shut down", "in a few seconds."],

@@ -143,6 +143,11 @@ def _render_home(draw: ImageDraw.ImageDraw, state: "FpmsState") -> None:
     y += _draw_status_bar(draw, state, y=y)
     y += padding * 4
 
+    # Alternate home page (QR code view)
+    if state.home_page_alternate and hp:
+        _render_home_qr(draw, state, y)
+        return
+
     # Mode title
     mode_label = _mode_display_name(hp.mode if hp else "classic")
     if len(mode_label) > 21:
@@ -152,22 +157,13 @@ def _render_home(draw: ImageDraw.ImageDraw, state: "FpmsState") -> None:
               font=FONTB13, fill=T["text_highlighted_color"])
     y += 14 + padding * 2
 
-    # Primary IP (large)
-    if hp and hp.primary_ip:
-        ip = hp.primary_ip
-        ip_w = FONTB12.getbbox(ip)[2]
-        draw.text(((PAGE_WIDTH - ip_w) / 2, y + padding), ip,
-                  font=FONTB12, fill=T["text_color"])
-        y += 13 + padding
+    # Mode-specific content
+    if hp:
+        y = _render_home_mode_content(draw, hp, y)
 
-    # WLAN interfaces (small)
-    if hp and hp.wlan_interfaces:
-        for wif in hp.wlan_interfaces[:2]:
-            label = f"wlan: {wif.name}"
-            lw = SMART_FONT.getbbox(label)[2]
-            draw.text(((PAGE_WIDTH - lw) / 2, y), label,
-                      font=SMART_FONT, fill=T["text_secondary_color"])
-            y += 11
+    # Alert bar (above complications strip)
+    if hp and hp.alerts:
+        _draw_alert_bar(draw, hp.alerts[0])
 
     # Complications strip (above system bar)
     if state.complications:
@@ -176,6 +172,124 @@ def _render_home(draw: ImageDraw.ImageDraw, state: "FpmsState") -> None:
     # System bar (hostname)
     hostname = hp.hostname if hp else ""
     _draw_system_bar(draw, hostname)
+
+
+def _render_home_mode_content(
+    draw: ImageDraw.ImageDraw, hp, y: int
+) -> int:
+    """Render mode-specific interface info on home screen. Returns new y."""
+    padding = 2
+    mode = hp.mode
+
+    # Primary IP (large, centered)
+    if hp.primary_ip:
+        ip = hp.primary_ip
+        ip_w = FONTB12.getbbox(ip)[2]
+        draw.text(((PAGE_WIDTH - ip_w) / 2, y + padding), ip,
+                  font=FONTB12, fill=T["text_color"])
+        y += 13 + padding
+
+    if mode == "hotspot":
+        # Connected client count
+        if hp.client_count is not None:
+            label = f"Clients: {hp.client_count}"
+            lw = SMART_FONT.getbbox(label)[2]
+            draw.text(((PAGE_WIDTH - lw) / 2, y), label,
+                      font=SMART_FONT, fill=T["text_secondary_color"])
+            y += 11
+
+    # WLAN interfaces (for all modes)
+    if hp.wlan_interfaces:
+        for wif in hp.wlan_interfaces[:2]:
+            label = f"wlan: {wif.name}"
+            lw = SMART_FONT.getbbox(label)[2]
+            draw.text(((PAGE_WIDTH - lw) / 2, y), label,
+                      font=SMART_FONT, fill=T["text_secondary_color"])
+            y += 11
+
+    # Secondary interfaces (classic, server, bridge)
+    if mode in ("classic", "server", "bridge") and hp.secondary_ips:
+        for sec in hp.secondary_ips[:3]:
+            label = f"{sec['name']}: {sec['ip']}"
+            if len(label) > 21:
+                label = label[:19] + ".."
+            lw = SMART_FONT.getbbox(label)[2]
+            draw.text(((PAGE_WIDTH - lw) / 2, y), label,
+                      font=SMART_FONT, fill=T["text_secondary_color"])
+            y += 11
+
+    return y
+
+
+def _render_home_qr(draw: ImageDraw.ImageDraw, state: "FpmsState", y: int) -> None:
+    """Render the QR code alternate home page."""
+    import base64
+    import io
+
+    hp = state.homepage
+    ssid = passphrase = None
+
+    if hp.mode == "classic" and hp.profiler_active:
+        ssid = hp.profiler_ssid
+        passphrase = hp.profiler_passphrase
+    elif hp.mode != "classic":
+        ssid = hp.hotspot_ssid
+        passphrase = hp.hotspot_passphrase
+
+    if not ssid:
+        # Nothing to show — draw a centered message
+        msg = "No QR available"
+        mw = SMART_FONT.getbbox(msg)[2]
+        draw.text(((PAGE_WIDTH - mw) / 2, y + 20), msg,
+                  font=SMART_FONT, fill=T["text_secondary_color"])
+        _draw_system_bar(draw, hp.hostname if hp else "")
+        return
+
+    # Generate QR code
+    try:
+        import qrcode
+        data = f"WIFI:S:{ssid};T:WPA;P:{passphrase or ''};;"
+        qr_img = qrcode.make(data)
+        # Scale to fit between status bar and system bar
+        available = PAGE_HEIGHT - y - SYSTEM_BAR_HEIGHT - 20
+        qr_img = qr_img.resize((available, available))
+
+        # We can't paste into ImageDraw, so we encode and decode
+        buf = io.BytesIO()
+        qr_img.save(buf, format="PNG")
+        buf.seek(0)
+        qr_pil = Image.open(buf).convert("RGB")
+        # Draw QR centered
+        qr_x = (PAGE_WIDTH - available) // 2
+        # We return to the Image via draw._image
+        draw._image.paste(qr_pil, (qr_x, y))
+
+        # SSID label below QR
+        label_y = y + available + 2
+        label = ssid if len(ssid) <= 21 else ssid[:19] + ".."
+        lw = TINY_FONT.getbbox(label)[2]
+        draw.text(((PAGE_WIDTH - lw) / 2, label_y), label,
+                  font=TINY_FONT, fill=T["text_secondary_color"])
+    except Exception:
+        msg = "QR error"
+        mw = SMART_FONT.getbbox(msg)[2]
+        draw.text(((PAGE_WIDTH - mw) / 2, y + 20), msg,
+                  font=SMART_FONT, fill=T["text_secondary_color"])
+
+    _draw_system_bar(draw, hp.hostname if hp else "")
+
+
+def _draw_alert_bar(draw: ImageDraw.ImageDraw, alert_text: str) -> None:
+    """Draw a single alert line above the complications strip / system bar."""
+    alert_y = PAGE_HEIGHT - SYSTEM_BAR_HEIGHT - 28
+    color = (T["alert_error_title_background"] if "NOT SET" in alert_text
+             or "NO WI-FI" in alert_text else T["alert_info_title_background"])
+    if len(alert_text) > 21:
+        alert_text = alert_text[:19] + ".."
+    aw = TINY_FONT.getbbox(alert_text)[2]
+    draw.rectangle((0, alert_y, PAGE_WIDTH, alert_y + 12), fill=color)
+    draw.text(((PAGE_WIDTH - aw) / 2, alert_y + 2), alert_text,
+              font=TINY_FONT, fill="white")
 
 
 def _mode_display_name(mode: str) -> str:
@@ -196,13 +310,35 @@ def _draw_status_bar(draw: ImageDraw.ImageDraw, state: "FpmsState", y: int = 0) 
     draw.text((2 + 2, y + 2), time_str, font=FONTB11, fill=T["status_bar_foreground"])
 
     x = PAGE_WIDTH - 4
+    fg = T["status_bar_foreground"]
+
+    # Battery indicator
+    if hp and hp.battery and hp.battery.present:
+        x -= 18
+        _draw_battery(draw, x, y + 3, hp.battery)
+
+    # Temperature indicator (only shown when hot: >= 70C)
+    if hp and hp.cpu_temp is not None and hp.cpu_temp >= 70:
+        x -= 10
+        color = (T["status_bar_temp_high"] if hp.cpu_temp >= 80
+                 else T["status_bar_temp_med"] if hp.cpu_temp >= 75
+                 else T["status_bar_temp_low"])
+        draw.rectangle((x, y + 4, x + 4, y + 12), outline=color)
+        draw.rectangle((x + 1, y + 2, x + 3, y + 4), fill=color)
+        draw.ellipse((x - 1, y + 10, x + 5, y + 15), fill=color)
+
+    # WiFi adapter indicators
+    if hp and hp.wlan_interfaces:
+        for wif in hp.wlan_interfaces[:2]:
+            x -= 10
+            _draw_wifi_icon(draw, x, y + 2, fg)
 
     # Bluetooth indicator
     if hp and hp.bluetooth_on:
         bt_icon = chr(0xf128)
         icon_w = ICONS.getbbox(bt_icon)[2]
         x -= icon_w + 2
-        draw.text((x, y), bt_icon, font=ICONS, fill=T["status_bar_foreground"])
+        draw.text((x, y), bt_icon, font=ICONS, fill=fg)
 
     # Reachability indicator (globe)
     h = STATUS_BAR_HEIGHT - 2
@@ -210,6 +346,30 @@ def _draw_status_bar(draw: ImageDraw.ImageDraw, state: "FpmsState", y: int = 0) 
     _draw_globe(draw, x, y + 1, h, reachable=hp.reachable if hp else None)
 
     return STATUS_BAR_HEIGHT
+
+
+def _draw_battery(draw: ImageDraw.ImageDraw, x: int, y: int, battery) -> None:
+    """Draw a small battery icon with fill level."""
+    w, h = 14, 8
+    # Outline
+    draw.rectangle((x, y, x + w, y + h), outline=T["status_bar_foreground"])
+    # Nub
+    draw.rectangle((x + w, y + 2, x + w + 2, y + h - 2), fill=T["status_bar_foreground"])
+    # Fill
+    level = battery.level_pct or 0
+    fill_w = int(w * level / 100)
+    color = T["status_bar_battery_low"] if level <= 25 else T["status_bar_battery_full"]
+    if battery.charging:
+        color = T["status_bar_battery_full"]
+    if fill_w > 0:
+        draw.rectangle((x + 1, y + 1, x + fill_w, y + h - 1), fill=color)
+
+
+def _draw_wifi_icon(draw: ImageDraw.ImageDraw, x: int, y: int, color: str) -> None:
+    """Draw a small WiFi pie-slice icon."""
+    for r in (10, 7, 4):
+        draw.arc((x - r // 2, y, x + r // 2 + 4, y + r + 2), 200, 340, fill=color)
+    draw.rectangle((x + 1, y + 8, x + 3, y + 10), fill=color)
 
 
 def _draw_globe(

@@ -45,22 +45,29 @@ def handle_input(
     if state.loading and button != "left":
         return NavResult(nav=nav)
 
-    # key1/key2/key3 shortcuts — not implemented yet, ignore
-    if button in ("key1", "key2", "key3"):
-        return NavResult(nav=nav)
+    # ------------------------------------------------------------------
+    # KEY1/KEY2/KEY3 shortcuts (work from any display state)
+    # ------------------------------------------------------------------
+    if button == "key1":
+        return _handle_key1(state, nav, tree)
+    if button == "key2":
+        return _handle_key2(state, nav, tree)
+    if button == "key3":
+        return _handle_key3(state, nav, tree)
 
     # ------------------------------------------------------------------
     # Home page
     # ------------------------------------------------------------------
     if display_state == "home":
-        if button in ("down", "right", "center"):
+        if button in ("down", "right"):
             # Enter the top-level menu
             nav.display_state = "menu"
             nav.path = [0]
             return NavResult(nav=nav)
+        if button == "center":
+            # Toggle alternate home page (QR code view)
+            return NavResult(nav=nav, action_id="__toggle_home_alt__")
         if button == "up":
-            # Toggle alternate home page — no nav change, but we signal it
-            # via a special no-op (the store/router will handle alt toggle)
             return NavResult(nav=nav)
         return NavResult(nav=nav)
 
@@ -191,3 +198,83 @@ def current_children_names(nav: NavLocation, tree: MenuTree) -> list[str]:
     """Return display names of siblings at current nav level (for rendering)."""
     siblings = tree.siblings_of_path(nav.path)
     return [tree.index[sid].name for sid in siblings if sid in tree.index]
+
+
+# ---------------------------------------------------------------------------
+# KEY shortcut helpers
+# ---------------------------------------------------------------------------
+
+_KEY1_CYCLE = ["utils.reachability", "network.lldp", "network.eth0_ipconfig"]
+
+
+def _jump_to_leaf(node_id: str, nav: NavLocation, tree: MenuTree) -> NavResult:
+    """Navigate to a leaf node and dispatch its action."""
+    path = tree.find_path(node_id)
+    node = tree.index.get(node_id) if path else None
+    if path is None or node is None:
+        return NavResult(nav=nav)
+    nav.path = path
+    nav.display_state = "page"
+    return NavResult(nav=nav, action_id=node.action_id)
+
+
+def _handle_key1(
+    state: FpmsState, nav: NavLocation, tree: MenuTree
+) -> NavResult:
+    """KEY1: cycle Reachability → LLDP → Eth0 IP Config."""
+    current_node = tree.resolve_path(nav.path)
+    current_id = current_node.id if current_node else None
+    try:
+        idx = _KEY1_CYCLE.index(current_id)
+        next_id = _KEY1_CYCLE[(idx + 1) % len(_KEY1_CYCLE)]
+    except (ValueError, TypeError):
+        next_id = _KEY1_CYCLE[0]
+    return _jump_to_leaf(next_id, nav, tree)
+
+
+def _handle_key2(
+    state: FpmsState, nav: NavLocation, tree: MenuTree
+) -> NavResult:
+    """KEY2: jump to mode switcher submenu."""
+    mode = state.homepage.mode if state.homepage else "classic"
+    if mode == "classic":
+        target = "modes.hotspot"
+    else:
+        target = "modes.classic"
+    path = tree.find_path(target)
+    if path is None:
+        return NavResult(nav=nav)
+    node = tree.index.get(target)
+    if node and node.children:
+        nav.path = path + [0]
+        nav.display_state = "menu"
+    else:
+        nav.path = path
+        nav.display_state = "menu"
+    return NavResult(nav=nav)
+
+
+def _handle_key3(
+    state: FpmsState, nav: NavLocation, tree: MenuTree
+) -> NavResult:
+    """KEY3: toggle between Reboot and Shutdown submenus."""
+    current_node = tree.resolve_path(nav.path)
+    current_id = current_node.id if current_node else None
+
+    # If currently in shutdown area, go to reboot; otherwise go to shutdown
+    if current_id and "shutdown" in current_id:
+        target = "system.reboot"
+    else:
+        target = "system.shutdown"
+
+    path = tree.find_path(target)
+    if path is None:
+        return NavResult(nav=nav)
+    node = tree.index.get(target)
+    if node and node.children:
+        nav.path = path + [0]
+        nav.display_state = "menu"
+    else:
+        nav.path = path
+        nav.display_state = "menu"
+    return NavResult(nav=nav)

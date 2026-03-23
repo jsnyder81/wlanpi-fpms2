@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import configparser
+import logging
 import time
 from collections.abc import Callable, Coroutine
 from typing import Any
@@ -15,6 +17,34 @@ from wlanpi_fpms2.state.models import (
     NavLocation,
     PageContent,
 )
+
+
+_CONFIG_PATH = "/etc/wlanpi-fpms.conf"
+_log = logging.getLogger(__name__)
+
+
+def _persist_orientation(orientation: str) -> None:
+    """Save display orientation to /etc/wlanpi-fpms.conf."""
+    try:
+        cfg = configparser.ConfigParser()
+        cfg.read(_CONFIG_PATH)
+        if not cfg.has_section("display"):
+            cfg.add_section("display")
+        cfg.set("display", "orientation", orientation)
+        with open(_CONFIG_PATH, "w") as f:
+            cfg.write(f)
+    except Exception:
+        _log.warning("Could not persist orientation to %s", _CONFIG_PATH)
+
+
+def load_saved_orientation() -> str:
+    """Read display orientation from /etc/wlanpi-fpms.conf, default 'normal'."""
+    try:
+        cfg = configparser.ConfigParser()
+        cfg.read(_CONFIG_PATH)
+        return cfg.get("display", "orientation", fallback="normal")
+    except Exception:
+        return "normal"
 
 
 class FpmsStateStore:
@@ -98,10 +128,52 @@ class FpmsStateStore:
         async with self._lock:
             self._state.display_orientation = orientation  # type: ignore[assignment]
         await self._notify()
+        # Persist to config file
+        _persist_orientation(orientation)
 
-    async def set_shutdown(self, in_progress: bool) -> None:
+    async def set_shutdown(
+        self, in_progress: bool, shutdown_type: str | None = None
+    ) -> None:
         async with self._lock:
             self._state.shutdown_in_progress = in_progress
+            self._state.shutdown_type = shutdown_type  # type: ignore[assignment]
+        await self._notify()
+
+    async def wake_screen(self) -> None:
+        """Wake the display (e.g. on eth0 carrier change)."""
+        async with self._lock:
+            self._state.screen_sleeping = False
+            self._state.last_input_at = time.time()
+        await self._notify()
+
+    async def toggle_home_alternate(self) -> None:
+        """Toggle between normal and QR-code home page view."""
+        async with self._lock:
+            self._state.home_page_alternate = not self._state.home_page_alternate
+        await self._notify()
+
+    async def set_alert_overlay(self, page: PageContent) -> None:
+        """Show a temporary alert overlay (e.g. profiler notification)."""
+        async with self._lock:
+            self._state.current_page = page
+            self._state.nav.display_state = "page"
+        await self._notify()
+        # Auto-dismiss after delay if specified
+        if page.alert and page.alert.dismiss_after_ms:
+            delay = page.alert.dismiss_after_ms / 1000.0
+            asyncio.create_task(self._dismiss_overlay(delay))
+
+    async def _dismiss_overlay(self, delay: float) -> None:
+        """Dismiss the overlay alert after a delay."""
+        await asyncio.sleep(delay)
+        async with self._lock:
+            if (
+                self._state.current_page
+                and self._state.current_page.alert
+                and self._state.current_page.alert.level == "popup"
+            ):
+                self._state.current_page = None
+                self._state.nav.display_state = "home"
         await self._notify()
 
     # ------------------------------------------------------------------

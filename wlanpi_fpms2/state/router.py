@@ -106,6 +106,13 @@ async def get_menu(request: Request) -> list[MenuNode]:
 # Input handling
 # ---------------------------------------------------------------------------
 
+_FLIP_BUTTON_MAP = {
+    "up": "down", "down": "up",
+    "left": "right", "right": "left",
+    "key1": "key3", "key3": "key1",
+}
+
+
 @router.post("/input", status_code=202)
 async def post_input(event: InputEvent, request: Request) -> dict:
     store = _get_store(request)
@@ -115,6 +122,12 @@ async def post_input(event: InputEvent, request: Request) -> dict:
 
     if state.shutdown_in_progress:
         return {"status": "shutdown_in_progress"}
+
+    # Remap buttons when display is flipped
+    if state.display_orientation == "flipped":
+        remapped = _FLIP_BUTTON_MAP.get(event.button)
+        if remapped:
+            event = InputEvent(button=remapped)  # type: ignore[arg-type]
 
     # Compute new navigation
     result: NavResult = handle_input(state, event, tree)
@@ -126,6 +139,11 @@ async def post_input(event: InputEvent, request: Request) -> dict:
         result.action_id = None
         # Reset scroll
         await store.set_scroll(0, 0)
+
+    # Handle special sentinel action IDs
+    if result.action_id == "__toggle_home_alt__":
+        await store.toggle_home_alternate()
+        return {"status": "ok"}
 
     # Apply navigation
     await store.apply_nav(result.nav)

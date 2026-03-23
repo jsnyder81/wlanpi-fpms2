@@ -35,9 +35,10 @@ class TestHomeNavigation:
         result = _press(state_home, "right", tree)
         assert result.nav.display_state == "menu"
 
-    def test_center_from_home_enters_menu(self, state_home, tree):
+    def test_center_from_home_toggles_alternate(self, state_home, tree):
         result = _press(state_home, "center", tree)
-        assert result.nav.display_state == "menu"
+        assert result.nav.display_state == "home"
+        assert result.action_id == "__toggle_home_alt__"
 
     def test_up_from_home_stays_home(self, state_home, tree):
         result = _press(state_home, "up", tree)
