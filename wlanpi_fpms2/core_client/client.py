@@ -20,6 +20,7 @@ from wlanpi_fpms2.core_client.hmac_auth import HmacAuth
 from wlanpi_fpms2.core_client.models import (
     BatteryInfo,
     BluetoothStatus,
+    ClientCount,
     CloudTestResult,
     DateTimeInfo,
     DeviceInfo,
@@ -262,6 +263,14 @@ class CoreApiClient:
     async def get_ssid_passphrase(self) -> SsidPassphrase:
         data = await self._get("/system/ssid-passphrase")
         return SsidPassphrase.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # Connected Clients
+    # ------------------------------------------------------------------
+
+    async def get_connected_clients(self) -> ClientCount:
+        data = await self._get("/system/clients")
+        return ClientCount.model_validate(data)
 
     # ------------------------------------------------------------------
     # Public IPv6

@@ -138,9 +138,10 @@ async def homepage_refresh_loop(
             except Exception:
                 pass
 
-            # Hotspot SSID/passphrase (for home QR in non-classic modes)
+            # Hotspot SSID/passphrase and client count
             hotspot_ssid: str | None = None
             hotspot_passphrase: str | None = None
+            client_count: int | None = None
             if mode != "classic":
                 try:
                     creds = await core_client.get_ssid_passphrase()
@@ -148,6 +149,12 @@ async def homepage_refresh_loop(
                     hotspot_passphrase = creds.passphrase
                 except Exception:
                     pass
+            if mode == "hotspot":
+                try:
+                    clients = await core_client.get_connected_clients()
+                    client_count = clients.count
+                except Exception:
+                    client_count = 0
 
             # Network interfaces (secondary IPs, eth0 carrier, wlan detection)
             # IPInterface fields: ifname, operstate, ipv4_addresses()
@@ -208,6 +215,7 @@ async def homepage_refresh_loop(
                 profiler_passphrase=profiler_passphrase,
                 hotspot_ssid=hotspot_ssid,
                 hotspot_passphrase=hotspot_passphrase,
+                client_count=client_count,
             )
 
             # Wake screen if eth0 carrier changed

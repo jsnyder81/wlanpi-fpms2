@@ -83,6 +83,11 @@ class SsidPassphrase(BaseModel):
     passphrase: str = ""
 
 
+class ClientCount(BaseModel):
+    count: int = 0
+    clients: list[dict] = Field(default_factory=list)
+
+
 # ---------------------------------------------------------------------------
 # Bluetooth
 # ---------------------------------------------------------------------------
