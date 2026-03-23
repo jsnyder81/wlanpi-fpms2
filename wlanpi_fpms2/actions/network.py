@@ -52,12 +52,22 @@ async def show_interfaces(ctx: ActionContext) -> PageContent:
 
 
 async def show_wlan_interfaces(ctx: ActionContext) -> PageContent:
-    """List WLAN interfaces from wlanpi-core."""
+    """List WLAN interfaces (detected from kernel, not wpa_supplicant)."""
     if ctx.core_client is None:
         return _unavailable("WLAN Interfaces")
     try:
-        wlan = await ctx.core_client.get_wlan_interfaces()
-        lines = [iface.interface for iface in wlan.interfaces]
+        ifaces_by_group = await ctx.core_client.get_interfaces()
+        lines: list[str] = []
+        for ifaces in ifaces_by_group.values():
+            for iface in ifaces:
+                if not iface.ifname.startswith("wlan"):
+                    continue
+                status = "▲" if iface.operstate.upper() == "UP" else "▽"
+                ipv4 = iface.ipv4_addresses()
+                ip_str = ipv4[0].split("/")[0] if ipv4 else "-"
+                lines.append(f"{status} {iface.ifname}: {ip_str}")
+                if iface.address:
+                    lines.append(f"  MAC: {iface.address}")
         if not lines:
             lines = ["No WLAN interfaces"]
         return PageContent(title="WLAN Interfaces", lines=lines)

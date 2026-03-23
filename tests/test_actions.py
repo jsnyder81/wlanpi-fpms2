@@ -64,7 +64,15 @@ def _mock_core():
                 link_type="ether",
                 address="aa:bb:cc:dd:ee:ff",
                 addr_info=[IPInterfaceAddress(family="inet", local="192.168.1.1", prefixlen=24)],
-            )
+            ),
+            IPInterface(
+                ifindex=3,
+                ifname="wlan0",
+                operstate="UP",
+                link_type="ether",
+                address="11:22:33:44:55:66",
+                addr_info=[IPInterfaceAddress(family="inet", local="192.168.1.100", prefixlen=24)],
+            ),
         ]
     })
     m.get_wlan_interfaces = AsyncMock(return_value=WlanInterfaces(
@@ -108,7 +116,7 @@ class TestNetworkActions:
         ctx = _make_ctx(core)
         page = await network.show_wlan_interfaces(ctx)
         assert page.title == "WLAN Interfaces"
-        assert "wlan0" in page.lines
+        assert any("wlan0" in l for l in page.lines)
 
     async def test_show_eth0_ipconfig(self):
         core = _mock_core()
