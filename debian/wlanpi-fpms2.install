@@ -1,0 +1,4 @@
+cockpit/manifest.json usr/share/cockpit/wlanpi-fpms2/
+cockpit/index.html usr/share/cockpit/wlanpi-fpms2/
+cockpit/wlanpi-fpms.js usr/share/cockpit/wlanpi-fpms2/
+cockpit/wlanpi-fpms.css usr/share/cockpit/wlanpi-fpms2/

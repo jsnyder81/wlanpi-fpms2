@@ -1,9 +1,22 @@
 wlanpi-fpms2 (0.1.0) unstable; urgency=medium
 
   * Initial release — decoupled state/display architecture
-  * FastAPI state service with WebSocket broadcast
-  * wlanpi-core HMAC client (Phases 1 & 2)
+  * FastAPI state service with WebSocket broadcast (Phase 1)
+  * wlanpi-core HMAC client with full action registry (Phase 2)
   * OLED screen thin client with PIL renderer (Phase 3)
+  * Textual TUI client (Phase 5)
+  * Cockpit web plugin with polling transport (Phase 6)
   * Complications API for third-party status indicators
+  * Status bar indicators: battery, temperature, WiFi adapter count
+  * Mode-specific home screens (classic, hotspot, server, bridge)
+  * Home page QR code toggle (profiler/hotspot WiFi credentials)
+  * KEY1/KEY2/KEY3 shortcut navigation
+  * Profiler new-device notification popup
+  * Boot splash animation and shutdown/reboot display images
+  * Eth0 carrier-change screen wake
+  * Display orientation persistence and flipped button remapping
+  * Debian packaging with dh-virtualenv, Cockpit plugin install,
+    and systemd service ordering (After/Wants wlanpi-core)
+  * Conflicts with wlanpi-fpms (mutually exclusive)
 
- -- Jake Snyder <jsnyder81@gmail.com>  Sat, 21 Mar 2026 00:00:00 -0500
+ -- Jake Snyder <jsnyder81@gmail.com>  Sat, 22 Mar 2026 00:00:00 -0500

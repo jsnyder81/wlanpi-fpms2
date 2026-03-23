@@ -24,7 +24,8 @@ override_dh_virtualenv:
 		--upgrade-pip \
 		--preinstall="setuptools>=68" \
 		--preinstall="wheel" \
-		--extra-pip-arg="--compile"
+		--extra-pip-arg="--compile" \
+		--extras="screen"
 
 override_dh_strip:
 	dh_strip --exclude=cffi --exclude=_imaging

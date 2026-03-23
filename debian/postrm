@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# wlanpi-fpms2 postrm script
+#
+set -e
+
+if [ "$1" = "purge" ]; then
+    # Remove runtime configuration created by the service
+    rm -f /etc/wlanpi-fpms.conf
+fi
+
+#DEBHELPER#
+
+exit 0

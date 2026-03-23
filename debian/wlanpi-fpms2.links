@@ -1,0 +1,3 @@
+opt/wlanpi-fpms2/bin/wlanpi-fpms2 usr/bin/wlanpi-fpms2
+opt/wlanpi-fpms2/bin/wlanpi-fpms2-screen usr/bin/wlanpi-fpms2-screen
+opt/wlanpi-fpms2/bin/wlanpi-fpms2-tui usr/bin/wlanpi-fpms2-tui

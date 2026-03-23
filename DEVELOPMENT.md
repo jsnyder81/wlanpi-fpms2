@@ -1,6 +1,6 @@
 # wlanpi-fpms2 Development Setup
 
-This document covers how to set up a fresh WLANPi for development of **wlanpi-fpms2** alongside a dev copy of **wlanpi-core**.
+This document covers how to set up a fresh WLANPi for development of **wlanpi-fpms2** alongside a dev copy of **wlanpi-core**. All steps run directly on the WLANPi over SSH — no assumptions are made about your development host OS.
 
 ---
 
@@ -20,21 +20,20 @@ Both the production `wlanpi-core` (port 80 via nginx) and `wlanpi-fpms` are **st
 
 ## Prerequisites
 
-On your Mac, push both repos to the WLANPi (or clone them directly on device):
-
-```bash
-# From Mac — copy source trees to WLANPi
-rsync -av --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
-    ~/source/wlanpi-core   wlanpi@wlanpi-XXX.local:~/source/
-rsync -av --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
-    ~/source/wlanpi-fpms2  wlanpi@wlanpi-XXX.local:~/source/
-```
-
-Then SSH in for all subsequent steps:
+SSH into the WLANPi, then clone both repos:
 
 ```bash
 ssh wlanpi@wlanpi-XXX.local
 ```
+
+```bash
+mkdir -p ~/source
+cd ~/source
+git clone https://github.com/WLAN-Pi/wlanpi-core.git
+git clone https://github.com/WLAN-Pi/wlanpi-fpms2.git
+```
+
+> If you are working from a fork, substitute your fork URLs. All subsequent steps assume the repos are at `~/source/wlanpi-core` and `~/source/wlanpi-fpms2`.
 
 ---
 
@@ -139,15 +138,12 @@ sudo journalctl -f -u wlanpi-core-dev
 
 ### 1.6 Updating wlanpi-core-dev after code changes
 
-After editing files on your Mac and rsyncing:
-
 ```bash
-# Re-sync from Mac
-rsync -av --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
-    ~/source/wlanpi-core/ wlanpi@wlanpi-XXX.local:~/source/wlanpi-core/
+cd ~/source/wlanpi-core
+git pull
 
-# On the WLANPi — reinstall into venv (if pyproject/setup.py changed)
-cd ~/source/wlanpi-core && source venv/bin/activate && pip install . && deactivate
+# Reinstall into venv if pyproject.toml or setup.py changed
+source venv/bin/activate && pip install . && deactivate
 
 # Restart the service
 sudo systemctl restart wlanpi-core-dev
@@ -267,7 +263,7 @@ curl http://127.0.0.1:8765/health
 curl http://127.0.0.1:8765/state | python3 -m json.tool
 
 # WebSocket stream (Ctrl-C to stop)
-# Requires: pip install websockets (on your Mac or on device)
+# Requires: pip install websockets (on your dev machine or on device)
 python3 -c "
 import asyncio, websockets, json
 async def watch():
@@ -363,14 +359,11 @@ sudo journalctl -f -u wlanpi-core-dev
 
 ### Python source changes
 
-Because the package is installed in editable mode (`pip install -e .`), Python imports directly from the source tree. After rsyncing, a service restart is all that's needed — no reinstall:
+Because the package is installed in editable mode (`pip install -e .`), Python imports directly from the source tree. After pulling new code, a service restart is all that's needed — no reinstall:
 
 ```bash
-# Re-sync fpms2 from Mac
-rsync -av --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
-    ~/source/wlanpi-fpms2/ wlanpi@wlanpi-XXX.local:~/source/wlanpi-fpms2/
-
-# Restart on the WLANPi
+cd ~/source/wlanpi-fpms2
+git pull
 sudo systemctl restart wlanpi-fpms2
 # Screen client auto-restarts because it requires wlanpi-fpms2
 ```
@@ -379,6 +372,7 @@ If `pyproject.toml` changed (new dependency), reinstall first:
 
 ```bash
 cd ~/source/wlanpi-fpms2
+git pull
 source .venv/bin/activate
 pip install -e .
 pip install -e .[screen]
@@ -395,7 +389,7 @@ The Cockpit plugin is served directly from the symlinked source directory, so no
    sudo systemctl restart cockpit
    ```
 
-2. Hard-refresh the browser: `Cmd+Shift+R` (Mac) or `Ctrl+Shift+R` (Linux/Windows)
+2. Hard-refresh the browser: `Ctrl+Shift+R` (Linux/Windows) or `Cmd+Shift+R` (macOS)
 
    If that doesn't work, open an **incognito/private** window to force a clean load.
 

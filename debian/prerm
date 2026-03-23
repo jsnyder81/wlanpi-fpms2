@@ -12,13 +12,6 @@ if [ -d /run/systemd/system ]; then
     systemctl disable wlanpi-fpms2.service        2>/dev/null || true
 fi
 
-# Remove symlinks we created in postinst
-for cmd in wlanpi-fpms2 wlanpi-fpms2-screen wlanpi-fpms2-tui; do
-    if [ -L "/usr/bin/$cmd" ]; then
-        rm -f "/usr/bin/$cmd"
-    fi
-done
-
 #DEBHELPER#
 
 exit 0

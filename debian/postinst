@@ -4,16 +4,6 @@
 #
 set -e
 
-# Create symlinks so the entry-point scripts are on PATH
-VENV=/opt/wlanpi-fpms2
-BIN=/usr/bin
-
-for cmd in wlanpi-fpms2 wlanpi-fpms2-screen wlanpi-fpms2-tui; do
-    if [ -f "$VENV/bin/$cmd" ] && [ ! -e "$BIN/$cmd" ]; then
-        ln -sf "$VENV/bin/$cmd" "$BIN/$cmd"
-    fi
-done
-
 # Enable SPI interface (required for the OLED display)
 BOOT_CONFIG=/boot/firmware/config.txt
 [ -f "$BOOT_CONFIG" ] || BOOT_CONFIG=/boot/config.txt

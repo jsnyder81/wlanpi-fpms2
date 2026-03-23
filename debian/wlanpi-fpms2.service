@@ -1,6 +1,7 @@
 [Unit]
 Description=WLANPi FPMS2 State Service
-After=network.target
+After=network.target wlanpi-core.service
+Wants=wlanpi-core.service
 # Conflict with old fpms — only one may run at a time
 Conflicts=wlanpi-fpms.service
 
