@@ -10,6 +10,7 @@ Type=simple
 User=wlanpi
 Group=wlanpi
 ExecStart=/usr/bin/wlanpi-fpms2
+Environment="WLANPI_CORE_BASE_URL=http://127.0.0.1:31415/api/v1"
 Restart=on-failure
 RestartSec=5
 
