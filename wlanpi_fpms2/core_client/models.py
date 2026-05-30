@@ -199,7 +199,7 @@ class IPInterface(BaseModel):
     mtu: int = 0
     operstate: str = ""
     link_type: str = ""
-    address: str = ""
+    address: Any = ""
     addr_info: list[IPInterfaceAddress] = Field(default_factory=list)
 
     model_config = {"extra": "allow"}
