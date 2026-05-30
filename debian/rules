@@ -10,7 +10,11 @@ DH_VENV_DIR=debian/$(PACKAGE)$(DH_VIRTUALENV_INSTALL_ROOT)/$(PACKAGE)
 %:
 	dh $@ --with python-virtualenv --buildsystem=pybuild
 
-.PHONY: override_dh_virtualenv override_dh_strip override_dh_shlibdeps override_dh_dwz
+.PHONY: override_dh_installsystemd override_dh_virtualenv override_dh_strip override_dh_shlibdeps override_dh_dwz
+
+override_dh_installsystemd:
+	dh_installsystemd wlanpi-fpms2.service
+	dh_installsystemd wlanpi-fpms2-screen.service
 
 override_dh_dwz:
 
