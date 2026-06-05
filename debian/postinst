@@ -17,11 +17,8 @@ if [ -f "$BOOT_CONFIG" ]; then
 fi
 
 # Reload systemd and enable services
-if [ -d /run/systemd/system ]; then
-    systemctl daemon-reload || true
-    systemctl enable wlanpi-fpms2.service        || true
-    systemctl enable wlanpi-fpms2-screen.service || true
-fi
+# debhelper handles systemd enabling and reloading natively.
+
 
 #DEBHELPER#
 

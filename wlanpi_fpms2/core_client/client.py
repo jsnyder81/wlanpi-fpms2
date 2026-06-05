@@ -47,7 +47,7 @@ from wlanpi_fpms2.core_client.models import (
 
 log = logging.getLogger(__name__)
 
-_DEFAULT_BASE_URL = "http://localhost/api/v1"
+_DEFAULT_BASE_URL = "http://localhost:31415/api/v1"
 _DEFAULT_TIMEOUT = 30.0
 
 

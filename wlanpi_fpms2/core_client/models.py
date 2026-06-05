@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -193,16 +193,28 @@ class IPInterfaceAddress(BaseModel):
 
 
 class IPInterface(BaseModel):
-    ifindex: int = 0
+    ifindex: Optional[int] = 0
     ifname: str = ""
     flags: list[str] = Field(default_factory=list)
-    mtu: int = 0
+    mtu: Optional[int] = 0
     operstate: str = ""
     link_type: str = ""
     address: str = ""
     addr_info: list[IPInterfaceAddress] = Field(default_factory=list)
 
     model_config = {"extra": "allow"}
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_none_to_defaults(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if data.get("ifname") is None: data["ifname"] = ""
+            if data.get("operstate") is None: data["operstate"] = ""
+            if data.get("link_type") is None: data["link_type"] = ""
+            if data.get("address") is None: data["address"] = ""
+            if data.get("flags") is None: data["flags"] = []
+            if data.get("addr_info") is None: data["addr_info"] = []
+        return data
 
     def ipv4_addresses(self) -> list[str]:
         return [

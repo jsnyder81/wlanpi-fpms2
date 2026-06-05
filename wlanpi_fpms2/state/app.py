@@ -70,7 +70,7 @@ def _create_core_client():
         return None
     try:
         secret = secret_path.read_bytes()
-        base_url = os.environ.get("WLANPI_CORE_BASE_URL", "http://localhost/api/v1")
+        base_url = os.environ.get("WLANPI_CORE_BASE_URL", "http://localhost:31415/api/v1")
         return CoreApiClient(base_url=base_url, secret=secret)
     except Exception as exc:
         log.warning("Could not create CoreApiClient: %s — running without core_client", exc)

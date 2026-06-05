@@ -151,6 +151,7 @@ def _make_cloud_test(vendor_label: str):
     vendor_key = _CLOUD_VENDOR_KEYS[vendor_label]
 
     async def _action(ctx: ActionContext) -> PageContent:
+        import httpx
         if ctx.core_client is None:
             return _unavailable(vendor_label)
         try:
@@ -158,6 +159,13 @@ def _make_cloud_test(vendor_label: str):
             lines = result.lines or ["No results"]
             status = "PASS" if result.success else "FAIL"
             return PageContent(title=f"{vendor_label}: {status}", lines=lines)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return PageContent(
+                    title=vendor_label,
+                    lines=["Not yet available.", "wlanpi-core endpoint", "not implemented."],
+                )
+            return _error(vendor_label, exc)
         except Exception as exc:
             return _error(vendor_label, exc)
 

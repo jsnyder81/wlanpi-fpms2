@@ -26,6 +26,7 @@ import os
 import httpx
 from textual import work
 from textual.app import App, ComposeResult
+from rich.markup import escape
 from textual.binding import Binding
 from textual.containers import ScrollableContainer
 from textual.reactive import reactive
@@ -79,7 +80,7 @@ class StatusBar(Widget):
             if hp.primary_ip:
                 left_parts.append(hp.primary_ip)
             if hp.mode and hp.mode != "classic":
-                left_parts.append(f"[{hp.mode.upper()}]")
+                left_parts.append(f"[{escape(hp.mode).upper()}]")
             if hp.bluetooth_on:
                 left_parts.append("BT")
             if hp.profiler_active:
@@ -184,7 +185,7 @@ class HomepagePanel(Widget):
         lines.append("[dim]Press → or Enter to open menu[/dim]")
 
         for alert in hp.alerts:
-            lines.append(f"[red]! {alert}[/red]")
+            lines.append(f"[red]! {escape(alert)}[/red]")
 
         self.query_one("#home-content", Static).update("\n".join(lines))
 
@@ -234,7 +235,7 @@ class MenuPanel(Widget):
                 continue
             arrow = "▸ " if node.children else "  "
             if i == current_idx:
-                lines.append(f"[bold reverse] {arrow}{node.name} [/bold reverse]")
+                lines.append(f"[bold reverse] {arrow}{escape(node.name)} [/bold reverse]")
             else:
                 lines.append(f"   {arrow}{node.name}")
 
@@ -294,7 +295,7 @@ class PagePanel(Widget):
             self.query_one("#page-content", Static).update("")
             return
 
-        title = f"[bold]{page.title}[/bold]"
+        title = f"[bold]{escape(page.title)}[/bold]"
         if page.page_count > 1:
             title += f"  [dim]page {page.page_index + 1}/{page.page_count}[/dim]"
         self.query_one("#page-title", Static).update(title)
@@ -308,7 +309,7 @@ class PagePanel(Widget):
                 page.alert.level, "white"
             )
             content.append("")
-            content.append(f"[{color}]{page.alert.message}[/{color}]")
+            content.append(f"[{color}]{escape(page.alert.message)}[/{color}]")
 
         self.query_one("#page-content", Static).update("\n".join(content))
 
@@ -347,7 +348,7 @@ class ComplicationsBar(Widget):
                 comp.status, "white"
             )
             icon = f"{comp.icon} " if comp.icon and len(comp.icon) == 1 else ""
-            parts.append(f"[{color}]{icon}{comp.label}: {comp.value}[/{color}]")
+            parts.append(f"[{color}]{icon}{escape(comp.label)}: {escape(comp.value)}[/{color}]")
 
         self.query_one("#complications-text", Static).update("  │  ".join(parts))
 
