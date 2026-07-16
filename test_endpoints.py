@@ -16,14 +16,16 @@ async def main():
         "get_timezone",
         "list_timezones",
         "get_reg_domain",
-        "get_updates",
         "get_battery",
         "get_datetime",
+        # hotspot endpoints — expected to fail in classic mode
         "get_ssid_passphrase",
         "get_connected_clients",
         "get_public_ipv6",
         "get_profiler_status",
     ]
+    # not tested: get_updates/install_updates, switch_mode, run_cloud_test,
+    # profiler purge — no wlanpi-core endpoints on pr131-packaging
     
     async with CoreApiClient(base_url="http://localhost:31415/api/v1", secret=secret) as client:
         for name in endpoints:

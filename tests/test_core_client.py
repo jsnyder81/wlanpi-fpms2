@@ -208,3 +208,112 @@ class TestCoreApiClientNetwork:
         eth0 = ifaces["interfaces"][0]
         assert eth0.ifname == "eth0"
         assert eth0.ipv4_addresses() == ["192.168.1.100/24"]
+
+
+# ---------------------------------------------------------------------------
+# pr131-packaging API surface (renamed paths + reshaped schemas)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.respx(base_url="http://localhost")
+class TestCoreApiClientPr131:
+    async def test_get_ssid_passphrase_hotspot_path(self, client, respx_mock):
+        respx_mock.get("/api/v1/system/hotspot/ssid-passphrase").mock(
+            return_value=httpx.Response(
+                200,
+                json={"mode": "hotspot", "ssid": "WLAN Pi abc", "passphrase": "secret123"},
+            )
+        )
+        creds = await client.get_ssid_passphrase()
+        assert creds.ssid == "WLAN Pi abc"
+        assert creds.passphrase == "secret123"
+
+    async def test_get_connected_clients_hotspot_path(self, client, respx_mock):
+        respx_mock.get("/api/v1/system/hotspot/clients").mock(
+            return_value=httpx.Response(
+                200, json={"mode": "hotspot", "interface": "wlan0", "count": 3}
+            )
+        )
+        clients = await client.get_connected_clients()
+        assert clients.count == 3
+
+    async def test_get_datetime_iso_shape(self, client, respx_mock):
+        respx_mock.get("/api/v1/system/datetime").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "datetime": "2026-06-07T21:32:12+01:00",
+                    "timezone": "Europe/London",
+                    "display": "Sun 07 Jun 21:32 BST",
+                },
+            )
+        )
+        dt = await client.get_datetime()
+        assert dt.datetime == "2026-06-07T21:32:12+01:00"
+        assert dt.timezone == "Europe/London"
+        assert dt.display == "Sun 07 Jun 21:32 BST"
+
+    async def test_get_battery_capacity_percent(self, client, respx_mock):
+        respx_mock.get("/api/v1/system/battery").mock(
+            return_value=httpx.Response(
+                200,
+                json={"present": True, "capacity_percent": 85,
+                      "status": "Discharging", "source": "BAT0"},
+            )
+        )
+        bat = await client.get_battery()
+        assert bat.present is True
+        assert bat.capacity_percent == 85
+
+    async def test_get_reg_domain_country(self, client, respx_mock):
+        respx_mock.get("/api/v1/system/reg-domain").mock(
+            return_value=httpx.Response(
+                200, json={"country": "GB", "raw": "GB", "source": "iw"}
+            )
+        )
+        rd = await client.get_reg_domain()
+        assert rd.country == "GB"
+        assert rd.source == "iw"
+
+    async def test_run_speedtest_camelcase(self, client, respx_mock):
+        respx_mock.get("/api/v1/utils/speedtest").mock(
+            return_value=httpx.Response(
+                200,
+                json={"ipAddress": "1.2.3.4", "downloadSpeed": "12.34 Mbps",
+                      "uploadSpeed": "1.23 Mbps", "pingMs": 5.6},
+            )
+        )
+        result = await client.run_speedtest()
+        assert result.download_speed == "12.34 Mbps"
+        lines = result.to_lines()
+        assert "Down: 12.34 Mbps" in lines
+        assert "Ping: 5.6ms" in lines
+
+    async def test_get_public_ipv6_info_lines(self, client, respx_mock):
+        respx_mock.get("/api/v1/network/info/publicip6").mock(
+            return_value=httpx.Response(
+                200, json={"info": ["2001:db8::1", "AS64500 Example ISP"]}
+            )
+        )
+        result = await client.get_public_ipv6()
+        assert result.info == ["2001:db8::1", "AS64500 Example ISP"]
+        assert result.error is None
+
+    async def test_scan_wlan_new_schema(self, client, respx_mock):
+        route = respx_mock.get("/api/v1/utils/wlan/scan").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "detail": "short",
+                    "networks": [
+                        {"ssid": "MyNet", "bssid": "aa:bb:cc:dd:ee:ff",
+                         "signal": -55, "freq": 5180, "primaryChannel": 36}
+                    ],
+                    "needsSelection": False,
+                },
+            )
+        )
+        result = await client.scan_wlan(hidden=True)
+        assert result.networks[0].signal == -55
+        assert result.networks[0].primary_channel == 36
+        # iface omitted so core auto-selects the scan adapter
+        assert "iface" not in str(route.calls[0].request.url)

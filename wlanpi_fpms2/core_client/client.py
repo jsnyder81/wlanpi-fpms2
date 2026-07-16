@@ -261,7 +261,7 @@ class CoreApiClient:
     # ------------------------------------------------------------------
 
     async def get_ssid_passphrase(self) -> SsidPassphrase:
-        data = await self._get("/system/ssid-passphrase")
+        data = await self._get("/system/hotspot/ssid-passphrase")
         return SsidPassphrase.model_validate(data)
 
     # ------------------------------------------------------------------
@@ -269,7 +269,7 @@ class CoreApiClient:
     # ------------------------------------------------------------------
 
     async def get_connected_clients(self) -> ClientCount:
-        data = await self._get("/system/clients")
+        data = await self._get("/system/hotspot/clients")
         return ClientCount.model_validate(data)
 
     # ------------------------------------------------------------------
@@ -300,8 +300,12 @@ class CoreApiClient:
     # WLAN scanner
     # ------------------------------------------------------------------
 
-    async def scan_wlan(self, iface: str = "wlan0", hidden: bool = True) -> ScanResults:
-        data = await self._get("/utils/wlan/scan", params={"iface": iface, "hidden": str(hidden).lower()})
+    async def scan_wlan(self, iface: str | None = None, hidden: bool = True) -> ScanResults:
+        # iface omitted → core auto-selects a suitable scan adapter
+        params: dict = {"hidden": str(hidden).lower()}
+        if iface:
+            params["iface"] = iface
+        data = await self._get("/utils/wlan/scan", params=params)
         return ScanResults.model_validate(data)
 
     # ------------------------------------------------------------------

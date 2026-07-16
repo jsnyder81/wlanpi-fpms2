@@ -1,15 +1,22 @@
 Metadata-Version: 2.4
 Name: wlanpi-fpms2
-Version: 0.1.0
+Version: 0.1.1
 Summary: WLANPi Front Panel Menu System 2 — decoupled state/display architecture
-Requires-Python: >=3.11
+Requires-Python: >=3.9
 Requires-Dist: fastapi>=0.111
 Requires-Dist: uvicorn[standard]>=0.29
 Requires-Dist: httpx>=0.27
 Requires-Dist: pydantic>=2.7
+Requires-Dist: eval_type_backport>=0.1.3
 Requires-Dist: websockets>=12.0
 Requires-Dist: textual>=0.61
 Requires-Dist: Pillow>=10.0
+Requires-Dist: qrcode>=7.0
+Provides-Extra: screen
+Requires-Dist: spidev>=3.5; extra == "screen"
+Requires-Dist: gpiozero>=1.6; extra == "screen"
+Requires-Dist: RPi.GPIO>=0.7; extra == "screen"
+Requires-Dist: gpiod>=2.0; extra == "screen"
 Provides-Extra: dev
 Requires-Dist: pytest>=8; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.23; extra == "dev"

@@ -14,8 +14,8 @@ _PCAP_STUB = ["Not yet available.", "Use wlanpi-core", "streaming WebSocket API.
 
 def _fmt(net) -> str:
     ssid = net.ssid or "<hidden>"
-    ch = f"ch{net.channel}" if net.channel else "?"
-    return f"{ssid} {ch} {net.rssi}dBm"
+    ch = f"ch{net.primary_channel}" if net.primary_channel else "?"
+    return f"{ssid} {ch} {net.signal}dBm"
 
 
 async def scanner_scan(ctx: ActionContext) -> PageContent:

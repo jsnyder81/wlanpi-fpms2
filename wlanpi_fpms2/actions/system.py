@@ -55,12 +55,10 @@ async def show_battery(ctx: ActionContext) -> PageContent:
         if not bat.present:
             return PageContent(title="Battery", lines=["No battery installed"])
         lines = [f"Status: {bat.status.capitalize()}" if bat.status else ""]
-        if bat.charge_pct is not None:
-            lines.append(f"Charge: {bat.charge_pct}%")
-        if bat.voltage_v is not None:
-            lines.append(f"Voltage: {bat.voltage_v}V")
-        if bat.cycle_count is not None:
-            lines.append(f"Cycles: {bat.cycle_count}")
+        if bat.capacity_percent is not None:
+            lines.append(f"Charge: {bat.capacity_percent}%")
+        if bat.source:
+            lines.append(f"Source: {bat.source}")
         return PageContent(title="Battery", lines=[l for l in lines if l])
     except Exception as exc:
         return _error("Battery", exc)
@@ -72,11 +70,12 @@ async def show_date(ctx: ActionContext) -> PageContent:
         return _unavailable("Date & Time")
     try:
         dt = await ctx.core_client.get_datetime()
+        date_str, time_str = _split_iso_datetime(dt.datetime)
         lines = [
-            dt.date_str,
-            dt.time_str,
-            dt.city if dt.city else dt.timezone,
-            f"TZ: {dt.tz_abbrev}" if dt.tz_abbrev else dt.timezone,
+            dt.display or "",
+            date_str if not dt.display else "",
+            time_str if not dt.display else "",
+            dt.timezone,
         ]
         return PageContent(title="Date & Time", lines=[l for l in lines if l])
     except Exception as exc:
@@ -94,7 +93,6 @@ async def set_timezone_auto(ctx: ActionContext) -> PageContent:
             lines=[
                 "Auto-detect complete.",
                 f"Timezone: {tz_info.timezone}",
-                f"City: {tz_info.city}",
             ],
         )
     except Exception as exc:
@@ -109,10 +107,7 @@ async def set_timezone(ctx: ActionContext) -> PageContent:
         tz_info = await ctx.core_client.get_timezone()
         return PageContent(
             title="Timezone",
-            lines=[
-                f"Current: {tz_info.timezone}",
-                f"City: {tz_info.city}",
-            ],
+            lines=[f"Current: {tz_info.timezone}"],
         )
     except Exception as exc:
         return _error("Timezone", exc)
@@ -124,8 +119,10 @@ async def show_reg_domain(ctx: ActionContext) -> PageContent:
         return _unavailable("RF Domain")
     try:
         rd = await ctx.core_client.get_reg_domain()
-        lines = [f"Domain: {rd.reg_domain}"] + rd.lines[1:]  # skip duplicate first line
-        return PageContent(title="RF Domain", lines=lines if lines else [rd.reg_domain])
+        lines = [f"Domain: {rd.country}"]
+        if rd.source:
+            lines.append(f"Source: {rd.source}")
+        return PageContent(title="RF Domain", lines=lines)
     except Exception as exc:
         return _error("RF Domain", exc)
 
@@ -174,6 +171,7 @@ async def rotate_display(ctx: ActionContext) -> PageContent:
 
 async def check_updates(ctx: ActionContext) -> PageContent:
     """Check for available wlanpi-* package updates."""
+    import httpx
     if ctx.core_client is None:
         return _unavailable("Check Updates")
     try:
@@ -183,12 +181,17 @@ async def check_updates(ctx: ActionContext) -> PageContent:
         else:
             lines = [f"{u.package}: {u.version}" for u in info.updates]
         return PageContent(title=f"Updates ({info.count})", lines=lines)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code in (404, 405):
+            return _not_in_core("Check Updates")
+        return _error("Check Updates", exc)
     except Exception as exc:
         return _error("Check Updates", exc)
 
 
 async def install_updates(ctx: ActionContext) -> PageContent:
     """Install available wlanpi-* package updates."""
+    import httpx
     if ctx.core_client is None:
         return _unavailable("Install Updates")
     try:
@@ -198,6 +201,10 @@ async def install_updates(ctx: ActionContext) -> PageContent:
             lines=["Updates installed.", "Reboot recommended."],
             alert=AlertContent(level="info", message="Updates installed"),
         )
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code in (404, 405):
+            return _not_in_core("Install Updates")
+        return _error("Install Updates", exc)
     except Exception as exc:
         return _error("Install Updates", exc)
 
@@ -259,6 +266,13 @@ def _unavailable(title: str) -> PageContent:
     )
 
 
+def _not_in_core(title: str) -> PageContent:
+    return PageContent(
+        title=title,
+        lines=["Not yet available.", "wlanpi-core endpoint", "not implemented."],
+    )
+
+
 def _error(title: str, exc: Exception) -> PageContent:
     log.warning("%s action error: %s", title, exc)
     return PageContent(
@@ -266,3 +280,13 @@ def _error(title: str, exc: Exception) -> PageContent:
         lines=[f"Error: {exc}"],
         alert=AlertContent(level="error", message=str(exc)),
     )
+
+
+def _split_iso_datetime(iso: str) -> tuple[str, str]:
+    """Split an ISO 8601 timestamp into display date and time strings."""
+    import datetime as _dt
+    try:
+        parsed = _dt.datetime.fromisoformat(iso)
+        return parsed.strftime("%Y-%m-%d"), parsed.strftime("%H:%M:%S")
+    except (ValueError, TypeError):
+        return iso, ""

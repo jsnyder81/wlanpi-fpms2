@@ -76,6 +76,7 @@ profiler_start_no11ax = _make_profiler_start("no 11ax")
 
 async def profiler_purge_reports(ctx: ActionContext) -> PageContent:
     """Purge profiler report files."""
+    import httpx
     if ctx.core_client is None:
         return _unavailable("Purge Reports")
     try:
@@ -88,12 +89,17 @@ async def profiler_purge_reports(ctx: ActionContext) -> PageContent:
                 message=result.message,
             ),
         )
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code in (404, 405):
+            return _not_in_core("Purge Reports")
+        return _error("Purge Reports", exc)
     except Exception as exc:
         return _error("Purge Reports", exc)
 
 
 async def profiler_purge_files(ctx: ActionContext) -> PageContent:
     """Purge all profiler files."""
+    import httpx
     if ctx.core_client is None:
         return _unavailable("Purge Files")
     try:
@@ -106,6 +112,10 @@ async def profiler_purge_files(ctx: ActionContext) -> PageContent:
                 message=result.message,
             ),
         )
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code in (404, 405):
+            return _not_in_core("Purge Files")
+        return _error("Purge Files", exc)
     except Exception as exc:
         return _error("Purge Files", exc)
 
@@ -115,6 +125,13 @@ def _unavailable(title: str) -> PageContent:
         title=title,
         lines=["wlanpi-core unavailable"],
         alert=AlertContent(level="error", message="wlanpi-core not connected"),
+    )
+
+
+def _not_in_core(title: str) -> PageContent:
+    return PageContent(
+        title=title,
+        lines=["Not yet available.", "wlanpi-core endpoint", "not implemented."],
     )
 
 

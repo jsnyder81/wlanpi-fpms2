@@ -71,7 +71,7 @@ async def show_speedtest(ctx: ActionContext) -> PageContent:
         return _unavailable("Speedtest")
     try:
         result = await ctx.core_client.run_speedtest()
-        lines = result.lines or ["No speedtest output"]
+        lines = result.to_lines() or ["No speedtest output"]
         return PageContent(title="Speedtest", lines=lines)
     except Exception as exc:
         return _error("Speedtest", exc)
@@ -203,6 +203,12 @@ def _make_mode_switcher(target_mode: str):
                     title=f"Switch to {target_mode.title()}",
                     lines=[f"{target_mode.title()} mode", "not installed."],
                 )
+            if exc.response.status_code in (404, 405):
+                return PageContent(
+                    title=f"Switch to {target_mode.title()}",
+                    lines=["Not yet available.", "wlanpi-core endpoint", "not implemented."],
+                )
+            return _error(f"Switch to {target_mode.title()}", exc)
         except Exception as exc:
             return _error(f"Switch to {target_mode.title()}", exc)
     _action.__name__ = f"switch_to_{target_mode}"

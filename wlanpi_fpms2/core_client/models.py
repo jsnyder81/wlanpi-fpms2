@@ -35,7 +35,6 @@ class ServiceStatus(BaseModel):
 
 class TimezoneInfo(BaseModel):
     timezone: str = "UTC"
-    city: str = ""
 
 
 class TimezoneList(BaseModel):
@@ -43,8 +42,9 @@ class TimezoneList(BaseModel):
 
 
 class RegDomainInfo(BaseModel):
-    reg_domain: str = ""
-    lines: list[str] = Field(default_factory=list)
+    country: str = ""
+    raw: Optional[str] = None
+    source: str = ""
 
 
 class UpdatePackage(BaseModel):
@@ -59,18 +59,17 @@ class UpdatesInfo(BaseModel):
 
 class BatteryInfo(BaseModel):
     present: bool = False
-    status: str = ""
-    charge_pct: Optional[int] = None
-    voltage_v: Optional[float] = None
-    cycle_count: Optional[int] = None
+    capacity_percent: Optional[int] = None
+    status: Optional[str] = None
+    source: Optional[str] = None
 
 
 class DateTimeInfo(BaseModel):
-    date_str: str = ""
-    time_str: str = ""
+    """Local date/time; `datetime` is ISO 8601 / RFC 3339."""
+
+    datetime: str = ""
     timezone: str = ""
-    city: str = ""
-    tz_abbrev: str = ""
+    display: Optional[str] = None
 
 
 class ModeSwitch(BaseModel):
@@ -142,11 +141,29 @@ class UfwInfo(BaseModel):
 
 
 class PublicIpInfo(BaseModel):
-    lines: list[str] = Field(default_factory=list)
+    info: list[str] = Field(default_factory=list)
+    error: Optional[str] = None
 
 
 class SpeedtestResult(BaseModel):
-    lines: list[str] = Field(default_factory=list)
+    ip_address: str = Field("", alias="ipAddress")
+    download_speed: str = Field("", alias="downloadSpeed")
+    upload_speed: str = Field("", alias="uploadSpeed")
+    ping_ms: Optional[float] = Field(None, alias="pingMs")
+    jitter_ms: Optional[float] = Field(None, alias="jitterMs")
+    server: Optional[str] = None
+
+    model_config = {"populate_by_name": True}
+
+    def to_lines(self) -> list[str]:
+        lines = [
+            f"IP: {self.ip_address}" if self.ip_address else "",
+            f"Down: {self.download_speed}" if self.download_speed else "",
+            f"Up: {self.upload_speed}" if self.upload_speed else "",
+            f"Ping: {self.ping_ms}ms" if self.ping_ms is not None else "",
+            f"Jitter: {self.jitter_ms}ms" if self.jitter_ms is not None else "",
+        ]
+        return [l for l in lines if l]
 
 
 class CloudTestResult(BaseModel):
@@ -158,9 +175,12 @@ class CloudTestResult(BaseModel):
 class ScanNetwork(BaseModel):
     ssid: str = ""
     bssid: str = ""
-    channel: Optional[int] = None
-    rssi: int = 0
-    hidden: bool = False
+    signal: int = 0
+    freq: Optional[int] = None
+    primary_channel: Optional[int] = Field(None, alias="primaryChannel")
+    channel_width: Optional[int] = Field(None, alias="channelWidth")
+
+    model_config = {"populate_by_name": True, "extra": "allow"}
 
 
 class ScanResults(BaseModel):

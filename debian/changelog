@@ -1,3 +1,16 @@
+wlanpi-fpms2 (0.1.1) unstable; urgency=medium
+
+  * Align core_client with wlanpi-core pr131-packaging API
+  * Hotspot endpoints moved: /system/hotspot/ssid-passphrase, /system/hotspot/clients
+  * New response schemas: datetime (ISO 8601), reg-domain (country), battery
+    (capacity_percent), speedtest (structured camelCase), publicip6 (info/error),
+    WLAN scan (signal/primaryChannel, auto adapter selection)
+  * Graceful "not yet available" pages for endpoints absent from core:
+    updates, mode switch, cloud tests, profiler purge
+  * Fix mode-switch action returning None on unexpected HTTP errors
+
+ -- Jake Snyder <jsnyder81@gmail.com>  Wed, 16 Jul 2026 02:00:00 -0600
+
 wlanpi-fpms2 (0.1.0) unstable; urgency=medium
 
   * Initial release — decoupled state/display architecture

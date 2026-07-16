@@ -172,7 +172,10 @@ async def show_publicip6(ctx: ActionContext) -> PageContent:
         return _unavailable("Public IPv6")
     try:
         result = await ctx.core_client.get_public_ipv6()
-        lines = result.lines or ["No IPv6 address detected"]
+        if result.error:
+            lines = [result.error]
+        else:
+            lines = [l for l in result.info if l.strip()] or ["No IPv6 address detected"]
         return PageContent(title="Public IPv6", lines=lines)
     except Exception as exc:
         return _error("Public IPv6", exc)

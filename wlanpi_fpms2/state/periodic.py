@@ -132,8 +132,7 @@ async def homepage_refresh_loop(
                 battery = BatteryData(
                     present=bat.present,
                     charging=bat.status.lower() == "charging" if bat.status else False,
-                    level_pct=bat.charge_pct,
-                    voltage_mv=int(bat.voltage_v * 1000) if bat.voltage_v else None,
+                    level_pct=bat.capacity_percent,
                 )
             except Exception:
                 pass
