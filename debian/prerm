@@ -4,8 +4,10 @@
 #
 set -e
 
-# Stop and disable services before removing
-if [ -d /run/systemd/system ]; then
+# Stop and disable services only on package removal. On upgrade the new
+# package's postinst restarts them — stopping/disabling here would leave
+# the device without a front panel after every upgrade.
+if [ "$1" = "remove" ] && [ -d /run/systemd/system ]; then
     systemctl stop  wlanpi-fpms2-screen.service 2>/dev/null || true
     systemctl stop  wlanpi-fpms2.service        2>/dev/null || true
     systemctl disable wlanpi-fpms2-screen.service 2>/dev/null || true

@@ -16,10 +16,15 @@ if [ -f "$BOOT_CONFIG" ]; then
     fi
 fi
 
-# Reload systemd and enable services
-# debhelper handles systemd enabling and reloading natively.
-
-
 #DEBHELPER#
+
+# Enable and (re)start services on install and upgrade. The units are
+# installed with --no-start, so debhelper does not start or restart them.
+if [ "$1" = "configure" ] && [ -d /run/systemd/system ]; then
+    systemctl daemon-reload || true
+    systemctl enable wlanpi-fpms2.service wlanpi-fpms2-screen.service || true
+    systemctl restart wlanpi-fpms2.service || true
+    systemctl restart wlanpi-fpms2-screen.service || true
+fi
 
 exit 0

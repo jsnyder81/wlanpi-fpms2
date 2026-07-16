@@ -1,3 +1,18 @@
+wlanpi-fpms2 (0.1.2) unstable; urgency=medium
+
+  * GPIO input hardening: request button lines per-pin so a pin held by
+    another consumer (e.g. gpio-fan overlay) only disables that button
+    instead of all of them
+  * Retry busy pins every 30s and restart the input loop on unexpected
+    errors instead of dying silently
+  * Button map detection: fall back to the wlanpi-model CLI when
+    /etc/wlanpi-model is missing; fix Pro match ("WLAN Pi Pro")
+  * Packaging: prerm no longer stops/disables services on upgrade (only on
+    removal); postinst enables and restarts services on install/upgrade —
+    previously every upgrade left both services stopped and disabled
+
+ -- Jake Snyder <jsnyder81@gmail.com>  Wed, 16 Jul 2026 04:00:00 -0600
+
 wlanpi-fpms2 (0.1.1) unstable; urgency=medium
 
   * Align core_client with wlanpi-core pr131-packaging API
