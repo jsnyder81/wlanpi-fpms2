@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Virtualenvs
+.venv/
+venv/
+
+# Packaging / build output
+build/
+dist/
+*.egg-info/
+*.deb
+*.buildinfo
+*.changes
+.build-manifest.txt
+
+# Debian build artifacts (debhelper / dh-virtualenv)
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/*.debhelper
+debian/*.debhelper.log
+debian/*.substvars
+debian/wlanpi-fpms2/
